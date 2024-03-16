@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import "hardhat/console.sol";
 import {IGame} from "./IGame.sol";
+import {Property} from "./Property.sol";
 
 contract Game is IGame {
     address public poolManager;
