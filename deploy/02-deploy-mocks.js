@@ -26,5 +26,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   //     log("Verifying...");
   //     await verify(HOG.address, args, "contracts/Mocks/Hog.sol:HOG");
   //   }
+  const StringHelper = await deploy("StringHelper", {
+    from: deployer,
+    args: args,
+    log: true,
+    blockConfirmations: 2,
+  });
 };
 module.exports.tags = ["all", "Tokens", "Local"];

@@ -11,6 +11,7 @@ contract Game is IGame {
 
     mapping(address => uint256) public playerToGame;
     mapping(uint256 => GameState) public idToGameState;
+    string[] usualNames;
 
     constructor(address _poolManager) {
         require(
@@ -27,6 +28,7 @@ contract Game is IGame {
     // Implementing the start function from IGame
     function setUp() external {
         //Mint 8 ERC20s with a balance of 4 for each
+        // Token newToken = new Property(name, symbol, initialSupply);
         //Add all of the ERC20s to the game state
         //Open up a game for other users to join
     }
@@ -35,6 +37,10 @@ contract Game is IGame {
 
     function createProperty() internal {
         //
+    }
+
+    function addNames(string[] memory list) public {
+        usualNames = list;
     }
 }
 

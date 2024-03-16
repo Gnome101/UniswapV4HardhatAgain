@@ -11,7 +11,7 @@ describe("Pool Test ", async function () {
   let poolManager;
   let GNOME;
   let EPICDAI;
-
+  let StringHelper;
   let uniswapInteract;
   let hookFactory;
   beforeEach(async () => {
@@ -32,6 +32,7 @@ describe("Pool Test ", async function () {
 
     uniswapInteract = await ethers.getContract("UniswapInteract");
     hookFactory = await ethers.getContract("UniswapHooksFactory");
+    StringHelper = await ethers.getContract("StringHelper");
   });
   it("all contracts deployed", async () => {
     // console.log("White ");
@@ -170,6 +171,7 @@ describe("Pool Test ", async function () {
 
     console.log(`The pool now has ${liq.toString()} in liquidity`);
   });
+
   describe("Testing Custom Curve", async () => {
     beforeEach(async () => {
       console.log("Setting up stuff");
