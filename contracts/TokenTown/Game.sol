@@ -11,7 +11,7 @@ contract Game is IGame {
 
     mapping(address => uint256) public playerToGame;
     mapping(uint256 => GameState) public idToGameState;
-    string[] usualNames;
+    string[] usualNamesAndSymbols;
 
     constructor(address _poolManager) {
         require(
@@ -27,20 +27,38 @@ contract Game is IGame {
 
     // Implementing the start function from IGame
     function setUp() external {
+        idToGameState[gameID].players.push(msg.sender);
+        idToGameState[gameID].numberOfPlayers++;
         //Mint 8 ERC20s with a balance of 4 for each
-        // Token newToken = new Property(name, symbol, initialSupply);
+        for (uint256 i = 0; i < usualNamesAndSymbols.length; i++) {
+            Property property = new Property(
+                usualNamesAndSymbols[i],
+                usualNamesAndSymbols[i + 1],
+                4
+            );
+            console.log(usualNamesAndSymbols[i], usualNamesAndSymbols[i + 1]);
+            idToGameState[gameID].propertyList.push(property);
+            i++;
+        }
+
         //Add all of the ERC20s to the game state
         //Open up a game for other users to join
+        gameID++;
     }
 
-    function joinGame(uint256 _gameID) external {}
+    function joinGame(uint256 _gameID) external {
+        idToGameState[_gameID].players.push(msg.sender);
+        idToGameState[_gameID].numberOfPlayers++;
+    }
 
     function createProperty() internal {
         //
     }
 
     function addNames(string[] memory list) public {
-        usualNames = list;
+        require(list.length % 2 == 0, "Must be even");
+        require(list.length > 0, "Must have stuff ");
+        usualNamesAndSymbols = list;
     }
 }
 

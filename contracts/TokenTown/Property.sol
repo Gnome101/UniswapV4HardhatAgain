@@ -6,8 +6,12 @@ contract Property is ERC20 {
     mapping(address => uint256) userToHouse; //This records how many houses a user has
     address immutable theBank;
 
-    constructor(string memory name, string memory symb) ERC20(name, symb) {
-        _mint(msg.sender, 4 * 10 ** 18);
+    constructor(
+        string memory name,
+        string memory symb,
+        uint256 supply
+    ) ERC20(name, symb) {
+        _mint(msg.sender, supply * 10 ** 18);
         theBank = msg.sender;
     }
 

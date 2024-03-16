@@ -14,6 +14,7 @@ describe("Pool Test ", async function () {
   let StringHelper;
   let uniswapInteract;
   let hookFactory;
+  let Game;
   beforeEach(async () => {
     accounts = await ethers.getSigners(); // could also do with getNamedAccounts
     deployer = accounts[0];
@@ -33,6 +34,7 @@ describe("Pool Test ", async function () {
     uniswapInteract = await ethers.getContract("UniswapInteract");
     hookFactory = await ethers.getContract("UniswapHooksFactory");
     StringHelper = await ethers.getContract("StringHelper");
+    Game = await ethers.getContract("Game");
   });
   it("all contracts deployed", async () => {
     // console.log("White ");
@@ -171,7 +173,18 @@ describe("Pool Test ", async function () {
 
     console.log(`The pool now has ${liq.toString()} in liquidity`);
   });
-
+  it("can set up game", async () => {
+    const list = [
+      "Mediteranan Avenue",
+      "MDA",
+      "BroadWay",
+      "BDW",
+      "Park Place",
+      "PKP",
+    ];
+    await Game.addNames(list);
+    await Game.setUp();
+  });
   describe("Testing Custom Curve", async () => {
     beforeEach(async () => {
       console.log("Setting up stuff");
