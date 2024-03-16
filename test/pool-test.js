@@ -170,12 +170,14 @@ describe("Pool Test ", async function () {
   it("can set up game", async () => {
     const chosenToken = EPICDAI;
     const list = [
-      "Mediteranan Avenue",
-      "MDA",
-      "BroadWay",
-      "BDW",
-      "Park Place",
-      "PKP",
+      "Street",
+      "STR",
+      "Avenue",
+      "AVE",
+      "Lane",
+      "LNE",
+      "Way",
+      "WAY",
     ];
     const gameID = "0";
     await deployerGame.addNames(list);
@@ -209,8 +211,74 @@ describe("Pool Test ", async function () {
 
     //Now we can start the game
     await deployerGame.startGame();
+    //Show the player moving
+    await deployerGame.beginMove();
+    //Player is now at the location
+
+    const deployerNewPosition = await deployerGame.getPlayerPosition(
+      deployer.address
+    );
+    console.log(deployerNewPosition.toString());
+    assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
   });
-  it(" ");
+  describe("Testing Game Mechanics", async () => {
+    beforeEach(async () => {
+      const chosenToken = EPICDAI;
+      const list = [
+        "Street",
+        "STR",
+        "Avenue",
+        "AVE",
+        "Lane",
+        "LNE",
+        "Way",
+        "WAY",
+      ];
+      const gameID = "0";
+      await deployerGame.addNames(list);
+      //This is needed to account for the 18 decimals used in ERC20s
+      const decimalAdj = new Big(10).pow(18);
+
+      //Below an arbitary amount is set for the token0 and token1 amounts for liquidity
+      const startingAmount = new Big("10").times(decimalAdj);
+      await chosenToken.approve(deployerGame.target, startingAmount.toFixed());
+      await deployerGame.setUp(chosenToken.target, startingAmount.toFixed());
+      const listSol = await deployerGame.getAllProperties();
+      assert.equal(listSol.toString(), list.toString());
+      const gameBalance = await chosenToken.balanceOf(deployerGame.target);
+      assert(gameBalance.toString(), startingAmount.toFixed());
+
+      //Now the user will attempt to join
+      await userGame.joinGame();
+
+      //Now I validate all properties
+      const numOfPlayers = await deployerGame.getActiveNumberOfPlayers();
+      assert.equal(numOfPlayers.toString(), "2");
+
+      const activeGameID = await deployerGame.getActiveGameID();
+      assert.equal(activeGameID.toString(), "0");
+
+      const activePlayers = await deployerGame.getActivePlayers();
+      assert.equal(activePlayers.toString(), [deployer.address, user.address]);
+
+      const chosenCurrency = await deployerGame.getCurrentChosenCurrency();
+      assert.equal(chosenCurrency.toString(), chosenToken.target);
+
+      //Now we can start the game
+      await deployerGame.startGame();
+    });
+    it("testing movement", async () => {
+      //Show the player moving
+      await deployerGame.beginMove();
+      //Player is now at the location
+
+      const deployerNewPosition = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      console.log(deployerNewPosition.toString());
+      assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
+    });
+  });
   describe("Testing Custom Curve", async () => {
     beforeEach(async () => {
       console.log("Setting up stuff");

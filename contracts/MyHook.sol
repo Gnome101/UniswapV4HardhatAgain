@@ -19,6 +19,7 @@ import "hardhat/console.sol";
 error SwapExpired();
 error OnlyPoolManager();
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Property} from "./TokenTown/Property.sol";
 
 contract MyHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -61,6 +62,9 @@ contract MyHook is BaseHook {
         );
         return abi.decode(res, (int24));
     }
+
+    mapping(address => uint256) tokenPrice;
+    mapping(address => uint256) tokenChange;
 
     function swap(
         PoolKey calldata poolKey,

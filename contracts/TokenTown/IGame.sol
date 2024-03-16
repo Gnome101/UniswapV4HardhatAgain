@@ -5,10 +5,14 @@ import {Property} from "./Property.sol";
 
 interface IGame {
     //Below are the events
-    event GameStarted(address indexed starter);
+    event GameStarted(address indexed starter, uint256 gameStarted);
     event GameEnded(address indexed ender);
     event GamePlayed(address indexed player);
     event CrossedGo(address indexed player);
+    event RolledDice(address indexed player, uint256 dice1, uint256 dice2);
+    event VisitJail(address indexed player);
+    event ReceivingAirdrop(address indexed player);
+    event FoundAsSybil(address indexed player);
 
     type player is address;
 

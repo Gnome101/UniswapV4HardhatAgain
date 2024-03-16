@@ -24,14 +24,23 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
   //   if (chainId != 31337) {
   //     log("Verifying...");
-  //     await verify(HOG.address, args, "contracts/Mocks/Hog.sol:HOG");
+  //     await verify(GNOME.address, args, "contracts/Mocks/GNOME.sol:GNOME");
   //   }
-  args = [deployer];
+  const poolManager = await ethers.getContract("PoolManager");
+
+  const hookFactory = await ethers.getContract("UniswapHooksFactory");
+
+  const hook = await hookFactory.hooks(0); //This is the hook created in 01-find-hook.js
+  args = [poolManager.target, hook];
   const Game = await deploy("Game", {
     from: deployer,
     args: args,
     log: true,
     blockConfirmations: 2,
   });
+  //   if (chainId != 31337) {
+  //     log("Verifying...");
+  //     await verify(Game.address, args, "contracts/TokenTown/Game.sol:Game");
+  //   }
 };
 module.exports.tags = ["all", "Tokens", "Local"];
