@@ -221,6 +221,7 @@ contract MyHook is BaseHook {
     // -----------------------------------------------
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
+    mapping(uint256 => uint256) public tokensBoughtAtPositon;
 
     function beforeSwap(
         address,
@@ -228,6 +229,10 @@ contract MyHook is BaseHook {
         IPoolManager.SwapParams calldata params,
         bytes calldata
     ) external override returns (bytes4) {
+        //Rules for monopoly
+        //At most 1 token can be bought at one position
+        // tokensBoughtAtPositon[]
+        //User must be within the position to length of a token
         console.log("Before a swap 11");
         uint256 tokenAmount = params.amountSpecified < 0
             ? uint256(-params.amountSpecified)

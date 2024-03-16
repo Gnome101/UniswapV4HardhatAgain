@@ -26,7 +26,8 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   //     log("Verifying...");
   //     await verify(HOG.address, args, "contracts/Mocks/Hog.sol:HOG");
   //   }
-  const StringHelper = await deploy("StringHelper", {
+  args = [deployer];
+  const Game = await deploy("Game", {
     from: deployer,
     args: args,
     log: true,

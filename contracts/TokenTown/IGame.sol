@@ -8,10 +8,13 @@ interface IGame {
     event GameStarted(address indexed starter);
     event GameEnded(address indexed ender);
     event GamePlayed(address indexed player);
+    event CrossedGo(address indexed player);
+
     type player is address;
 
     //Below are the structs
     struct GameState {
+        address currentPlayer; //This is the player that is rolling
         address[] players; //Array of the players in the game
         uint256 numberOfPlayers; //The total number of players
         address chosenCurrency; //The chosen currency (e.g HypApeCoin or USDC)
