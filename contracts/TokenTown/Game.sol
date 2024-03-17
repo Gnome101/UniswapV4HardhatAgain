@@ -58,7 +58,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         poolManager = _poolManager;
         mainHook = MyHook(_mainHook);
         // You can use console.log for debugging purposes
-        // console.log("Game contract deployed by:", msg.sender);
+        // console.log("Game contract deployed by:", activeUser);
         // console.log("Pool Manager set to:", poolManager);
     }
 
@@ -71,15 +71,19 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     }
 
     // Implementing the start function from IGame
-    function setUp(address selectedToken, uint256 bankStart) external {
+    function setUp(
+        address activeUser,
+        address selectedToken,
+        uint256 bankStart
+    ) external {
         SafeERC20.safeTransferFrom(
             IERC20(selectedToken),
-            msg.sender,
+            activeUser,
             address(this),
             bankStart
         );
-        idToGameState[gameID].players.push(msg.sender);
-        addressToGame[msg.sender] = gameID;
+        idToGameState[gameID].players.push(activeUser);
+        addressToGame[activeUser] = gameID;
         idToGameState[gameID].numberOfPlayers++;
         // console.log("GS", idToGameState[gameID].numberOfPlayers);
         idToGameState[gameID].chosenCurrency = selectedToken;
@@ -138,7 +142,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         //Then we need to add liquidity
         // SafeERC20.safeTransferFrom(
         //     IERC20(token),
-        //     msg.sender,
+        //     user,
         //     address(this),
         //     totalTokenNumber
         // );
@@ -187,24 +191,24 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         }
     }
 
-    function joinGame() external {
+    function joinGame(address activeUser) external {
         if (gameID == 0) {
             revert("No games exist");
         }
         uint256 curentGame = gameID - 1;
         address[] memory list = idToGameState[curentGame].players;
         for (uint i = 0; i < list.length; i++) {
-            if (msg.sender == list[i]) {
+            if (activeUser == list[i]) {
                 revert("Can not join twice");
             }
         }
-        idToGameState[curentGame].players.push(msg.sender);
-        addressToGame[msg.sender] = curentGame;
+        idToGameState[curentGame].players.push(activeUser);
+        addressToGame[activeUser] = curentGame;
         uint256 buyIn = idToGameState[curentGame].buyIn /
             idToGameState[curentGame].players.length;
         SafeERC20.safeTransferFrom(
             IERC20(idToGameState[curentGame].chosenCurrency),
-            msg.sender,
+            activeUser,
             address(this),
             buyIn
         );
@@ -223,16 +227,16 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         return buyIn;
     }
 
-    function startGame() external {
+    function startGame(address activeUser) external {
         //This just starts the most recently made game
         //This will begin the game for all players, and begin a move for the first player.
         if (gameID == 0) {
             revert("A game has not been setUp() yet");
         }
         uint256 curentGameID = gameID - 1;
-        userRoll[msg.sender] = true;
-        idToGameState[curentGameID].currentPlayer = msg.sender;
-        emit GameStarted(msg.sender, gameID);
+        userRoll[activeUser] = true;
+        idToGameState[curentGameID].currentPlayer = activeUser;
+        emit GameStarted(activeUser, gameID);
         //Now we have to distribute moneys
         uint256 amount = getCurrencyInfo[
             idToGameState[curentGameID].chosenCurrency
@@ -250,12 +254,12 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     }
 
     function _rollDice(
-        address user
+        address activeUser
     ) public returns (bool snake, uint256 total) {
         //Upon implementation add chainlink here
         uint256 dice1 = (uint256(
             keccak256(
-                abi.encodePacked(block.timestamp, block.prevrandao, msg.sender)
+                abi.encodePacked(block.timestamp, block.prevrandao, activeUser)
             )
         ) % 6) + 1;
 
@@ -264,49 +268,49 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                 abi.encodePacked(
                     block.timestamp,
                     block.prevrandao,
-                    msg.sender,
+                    activeUser,
                     dice1
                 )
             )
         ) % 6) + 1;
         total = dice1 + dice2;
-        emit RolledDice(user, dice1, dice2);
+        emit RolledDice(activeUser, dice1, dice2);
         if (dice1 == dice2) {
             snake = true;
         }
     }
 
-    function beginMove() external {
+    function beginMove(address activeUser) external {
         require(gameID > 0, "No Game Created");
-        uint256 currentGameID = addressToGame[msg.sender];
-        console.log(idToGameState[currentGameID].currentPlayer, msg.sender);
+        uint256 currentGameID = addressToGame[activeUser];
+        console.log(idToGameState[currentGameID].currentPlayer, activeUser);
         require(
-            idToGameState[currentGameID].currentPlayer == msg.sender,
+            idToGameState[currentGameID].currentPlayer == activeUser,
             "Must be current Player"
         );
 
-        require(userRoll[msg.sender], "User cannot roll");
-        userRoll[msg.sender] = false;
-        (bool rollAgain, uint256 stepsFoward) = _rollDice(msg.sender); //We would stop here and wait for chainlink to respnd if using it
-        if (userInJail[msg.sender]) {
+        require(userRoll[activeUser], "User cannot roll");
+        userRoll[activeUser] = false;
+        (bool rollAgain, uint256 stepsFoward) = _rollDice(activeUser); //We would stop here and wait for chainlink to respnd if using it
+        if (userInJail[activeUser]) {
             if (rollAgain) {
                 //User leaves jail
-                userInJail[msg.sender] = false;
+                userInJail[activeUser] = false;
             }
             stepsFoward = 0;
             rollAgain = false;
         }
         console.log(stepsFoward, rollAgain);
         if (rollAgain) {
-            userRoll[msg.sender] = true;
-            userRollsRow[msg.sender]++;
-            if (userRollsRow[msg.sender] > 3) {
-                sendUserToJail(msg.sender);
+            userRoll[activeUser] = true;
+            userRollsRow[activeUser]++;
+            if (userRollsRow[activeUser] > 3) {
+                sendUserToJail(activeUser);
             }
         }
 
-        _updatePlayerPosition(currentGameID, msg.sender, stepsFoward);
-        if (!userRoll[msg.sender]) {
+        _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
+        if (!userRoll[activeUser]) {
             //As long as the user cannot roll again then progress
             _incrementGameState(currentGameID);
         }
@@ -350,39 +354,43 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         return idToGameState[_gameID].players[nextIndex];
     }
 
-    function testMove(uint256 stepsFoward, bool rollAgain) external {
+    function testMove(
+        address activeUser,
+        uint256 stepsFoward,
+        bool rollAgain
+    ) external {
         require(gameID > 0, "No Game Created");
-        uint256 currentGameID = addressToGame[msg.sender];
-        // console.log(idToGameState[currentGameID].currentPlayer == msg.sender);
+        uint256 currentGameID = addressToGame[activeUser];
+        // console.log(idToGameState[currentGameID].currentPlayer == activeUser);
         require(
-            idToGameState[currentGameID].currentPlayer == msg.sender,
+            idToGameState[currentGameID].currentPlayer == activeUser,
             "Must be current Player"
         );
 
-        require(userRoll[msg.sender], "User cannot roll");
-        userRoll[msg.sender] = false;
+        require(userRoll[activeUser], "User cannot roll");
+        userRoll[activeUser] = false;
         // (bool rollAgain, uint256 steps)//We would stop here and wait for chainlink to respnd if using it
-        if (userInJail[msg.sender]) {
-            daysInJail[msg.sender]++;
-            // console.log(daysInJail[msg.sender]);
-            if (rollAgain || daysInJail[msg.sender] >= 2) {
+        if (userInJail[activeUser]) {
+            daysInJail[activeUser]++;
+            // console.log(daysInJail[activeUser]);
+            if (rollAgain || daysInJail[activeUser] >= 2) {
                 console.log("User leaves jail");
                 //User leaves jail
-                userInJail[msg.sender] = false;
+                userInJail[activeUser] = false;
             }
             stepsFoward = 0;
             rollAgain = false;
         }
 
         if (rollAgain) {
-            userRoll[msg.sender] = true;
-            userRollsRow[msg.sender]++;
-            if (userRollsRow[msg.sender] > 3) {
-                sendUserToJail(msg.sender);
+            userRoll[activeUser] = true;
+            userRollsRow[activeUser]++;
+            if (userRollsRow[activeUser] > 3) {
+                sendUserToJail(activeUser);
             }
         }
 
-        _updatePlayerPosition(currentGameID, msg.sender, stepsFoward);
+        _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
         _incrementGameState(currentGameID);
     }
 
@@ -392,7 +400,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     // ) internal override {
     //     randomResult = randomness;
     //     // Add additional logic to handle randomness
-    // _updatePlayerPosition(currentGameID, msg.sender, stepsFoward);
+    // _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
     // }
 
     function _updatePlayerPosition(
@@ -404,7 +412,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             return;
         }
         idToGameState[_gameID].playerPosition[player] += stepsFoward;
-        if ( idToGameState[_gameID].playerPosition[player] >= MAX_STEPS) {
+        if (idToGameState[_gameID].playerPosition[player] >= MAX_STEPS) {
             emit CrossedGo(player);
             //Need to give the player moneys here!
             SafeERC20.safeTransfer(
@@ -553,10 +561,11 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     }
 
     function purchaseProperty(
+        address activeUser,
         uint256 amountToSpend,
         address property
     ) public returns (uint256) {
-        uint256 currentGameID = addressToGame[msg.sender];
+        uint256 currentGameID = addressToGame[activeUser];
         PoolKey memory pk = addressToKey[property];
 
         //Assume that the currency is token0 and the property is token1
@@ -575,7 +584,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         );
         SafeERC20.safeTransferFrom(
             IERC20(idToGameState[currentGameID].chosenCurrency),
-            msg.sender,
+            activeUser,
             address(this),
             amountToSpend
         );
@@ -590,24 +599,25 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             pk,
             params,
             block.timestamp + 100,
-            msg.sender
+            activeUser
         );
-        uint256 currentPosition = getPlayerPosition(msg.sender);
+        uint256 currentPosition = getPlayerPosition(activeUser);
         console.log("Property purchased", currentPosition);
         rentExists[currentPosition] = true;
 
         SafeERC20.safeTransfer(
             IERC20(property),
-            msg.sender,
+            activeUser,
             IERC20(property).balanceOf(address(this))
         );
     }
 
     function sellProperty(
+        address activeUser,
         uint256 amountToSell,
         address property
     ) public returns (uint256) {
-        uint256 currentGameID = addressToGame[msg.sender];
+        uint256 currentGameID = addressToGame[activeUser];
         PoolKey memory pk = addressToKey[property];
 
         //Assume that the currency is token0 and the property is token1
@@ -627,7 +637,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         );
         SafeERC20.safeTransferFrom(
             IERC20(property),
-            msg.sender,
+            activeUser,
             address(this),
             amountToSell
         );
@@ -642,7 +652,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             pk,
             params,
             block.timestamp + 100,
-            msg.sender
+            activeUser
         );
         uint256 amountOwed = 0;
         if (amount0 < 0) {
@@ -651,7 +661,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         if (amount1 < 0) {
             amountOwed = uint256(-1 * amount1);
         }
-        uint256 currentPosition = getPlayerPosition(msg.sender);
+        uint256 currentPosition = getPlayerPosition(activeUser);
         address[] memory userList = idToGameState[currentGameID].players;
 
         rentExists[currentPosition] = false;
@@ -663,7 +673,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
         SafeERC20.safeTransfer(
             IERC20(idToGameState[currentGameID].chosenCurrency),
-            msg.sender,
+            activeUser,
             amountOwed
         );
     }
@@ -673,7 +683,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     function sendUserToJail(address user) public {
         emit SentToJail(user);
-        daysInJail[msg.sender] = 0;
+        daysInJail[user] = 0;
         userInJail[user] = true;
     }
 
@@ -681,13 +691,15 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         return getPlayerPosition(msg.sender);
     }
 
-    function getMyProperties() public view returns (Property[] memory) {
+    function getMyProperties(
+        address user
+    ) public view returns (Property[] memory) {
         Property[] memory list = getActiveProperties();
         uint count = 0;
 
         // First pass: count properties owned by the sender
         for (uint i = 0; i < list.length; i++) {
-            if (list[i].balanceOf(msg.sender) > 0) {
+            if (list[i].balanceOf(user) > 0) {
                 count++;
             }
         }
@@ -698,7 +710,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
         // Second pass: populate the array
         for (uint i = 0; i < list.length; i++) {
-            if (list[i].balanceOf(msg.sender) > 0) {
+            if (list[i].balanceOf(user) > 0) {
                 newList[index] = list[i];
                 index++;
             }
@@ -707,8 +719,11 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         return newList;
     }
 
-    function getBalanceOfProperty(Property prop) public view returns (uint256) {
-        return prop.balanceOf(msg.sender);
+    function getBalanceOfProperty(
+        address user,
+        Property prop
+    ) public view returns (uint256) {
+        return prop.balanceOf(user);
     }
 
     function getAllProperties() public view returns (string[] memory list) {

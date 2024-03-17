@@ -38,6 +38,12 @@ module.exports = {
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       chainId: 84532,
     },
+    luke: {
+      url: "https://chain.lukefoster.net/" || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 2797548018986773,
+    },
   },
 
   namedAccounts: {
