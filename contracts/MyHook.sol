@@ -121,8 +121,8 @@ contract MyHook is BaseHook {
                 poolKey.currency1
             );
 
-            console.log("-", uint256(-1 * amount0), uint256(amount1));
-            console.log(user);
+            // console.log("-", uint256(-1 * amount0), uint256(amount1));
+            // console.log(user);
             if (amount0 > 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(Currency.unwrap(poolKey.currency0)),
@@ -153,7 +153,7 @@ contract MyHook is BaseHook {
                 );
                 poolManager.settle(poolKey.currency1);
             }
-            console.log("Here");
+            // console.log("Here");
 
             if (amount0 < 0) {
                 poolManager.take(
@@ -173,11 +173,11 @@ contract MyHook is BaseHook {
                     address(this),
                     uint256(-1 * amount1)
                 );
-                console.log(
-                    IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(
-                        address(this)
-                    )
-                );
+                // console.log(
+                //     IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(
+                //         address(this)
+                //     )
+                // );
                 SafeERC20.safeTransfer(
                     IERC20(Currency.unwrap(poolKey.currency1)),
                     user,
@@ -252,7 +252,7 @@ contract MyHook is BaseHook {
         // tokensBoughtAtPositon[]
         //User must be within the position to length of a token
 
-        console.log("Before a swap 11");
+        // console.log("Before a swap 11");
         uint256 tokenAmount = params.amountSpecified < 0
             ? uint256(-params.amountSpecified)
             : uint256(params.amountSpecified);
@@ -274,7 +274,7 @@ contract MyHook is BaseHook {
                 "User not on square"
             );
             uint256 price = property.getPrice(currentUserPosition);
-            console.log("Price", price);
+            // console.log("Price", price);
             if (price == 0) {
                 revert("The price is returning as 0");
             }
@@ -293,7 +293,7 @@ contract MyHook is BaseHook {
                 refund = refund * price;
                 amountSpent -= refund;
                 tokenAmount = 10 ** 18;
-                console.log("Refund issued of:", refund, amountSpent);
+                // console.log("Refund issued of:", refund, amountSpent);
             } else {
                 tokensBoughtAtPositon[currentUserPosition] = tokenAmount;
             }
@@ -305,27 +305,33 @@ contract MyHook is BaseHook {
             uint256 price = property.getPrice(currentUserPosition);
 
             tokenAmount = tokenAmount * price;
-            console.log("Balance", outbound.balanceOfSelf());
+            // console.log("Balance", outbound.balanceOfSelf());
             poolManager.burn(address(this), outbound.toId(), tokenAmount); //This creates credit
             poolManager.take(outbound, address(this), tokenAmount); //This settles the credit
-            console.log(outbound.balanceOfSelf());
+            if (tokenAmount > 10 ** 18) {
+                tokensBoughtAtPositon[currentUserPosition] = 0;
+            } else {
+                tokensBoughtAtPositon[currentUserPosition] -= tokenAmount;
+            }
+
+            // console.log(outbound.balanceOfSelf());
         }
 
         // take the inbound token from the PoolManager, debt is paid by the swapper via the swap router
         // (inbound token is added to hook's reserves)
         poolManager.mint(address(this), inbound.toId(), amountSpent);
-        console.log("Here", amountSpent);
+        // console.log("Here", amountSpent);
 
         // provide outbound token to the PoolManager, credit is claimed by the swap router who forwards it to the swapper
         // (outbound token is removed from hook's reserves)
         // console.log("Here");
-        console.log(inbound.balanceOfSelf(), amountSpent);
-        console.log(outbound.balanceOfSelf(), tokenAmount);
+        // console.log(inbound.balanceOfSelf(), amountSpent);
+        // console.log(outbound.balanceOfSelf(), tokenAmount);
         outbound.transfer(address(poolManager), tokenAmount);
         poolManager.settle(outbound);
-        console.log(outbound.balanceOfSelf(), tokenAmount);
+        // console.log(outbound.balanceOfSelf(), tokenAmount);
 
-        console.log("Finished");
+        // console.log("Finished");
         return Hooks.NO_OP_SELECTOR;
     }
 

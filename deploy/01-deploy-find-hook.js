@@ -9,7 +9,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 
   const owner = deployer;
   const poolManager = await ethers.getContract("PoolManager");
-  const uniswapInteract = await ethers.getContract("UniswapInteract");
+  // const uniswapInteract = await ethers.getContract("UniswapInteract");
 
   const hookFactory = await ethers.getContract("UniswapHooksFactory");
 

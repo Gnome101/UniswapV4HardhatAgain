@@ -140,24 +140,20 @@ describe("Pool Test ", async function () {
     });
     it("user can purchase property", async () => {
       //Show the player moving
-      console.log("1");
+
       await deployerGame.testMove(2, false);
-      console.log("2");
 
       //Player is now at the location
       const listOfProperties = await deployerGame.getActiveProperties();
-      console.log(listOfProperties);
       const deployerNewPosition = await deployerGame.getPlayerPosition(
         deployer.address
       );
-      console.log("New Deployer Position:", deployerNewPosition.toString());
       assert.equal(deployerNewPosition.toString(), "2");
       const property = await deployerGame.returnPropertyUnderPlayer(
         deployer.address
       );
       // console.log(property);
       assert.equal(property.toString(), listOfProperties[0]);
-      console.log("Time to purchase");
       const amount = ethers.parseEther("65");
 
       await EPICDAI.approve(deployerGame.target, amount.toString());
@@ -166,14 +162,11 @@ describe("Pool Test ", async function () {
         property.toString()
       );
       const list = await deployerGame.getMyProperties();
-      console.log(list);
       const propertyAmount = await deployerGame.getBalanceOfProperty(list[0]);
-      console.log(propertyAmount.toString());
       assert.equal(
         propertyAmount.toString(),
         ethers.parseEther("1").toString()
       );
-      console.log("Now trying to sell");
       PROP = await ethers.getContractAt("Property", property.toString());
       await PROP.approve(
         deployerGame.target,
@@ -193,7 +186,6 @@ describe("Pool Test ", async function () {
       const deployerNewPosition = await deployerGame.getPlayerPosition(
         deployer.address
       );
-      console.log("New Deployer Position:", deployerNewPosition.toString());
       assert.equal(deployerNewPosition.toString(), "2");
       const property = await deployerGame.returnPropertyUnderPlayer(
         deployer.address
@@ -274,7 +266,91 @@ describe("Pool Test ", async function () {
         "PlayerWon"
       );
     });
+    it("user can receive money from passing go", async () => {
+      const balBefore = new Big(
+        (await EPICDAI.balanceOf(deployer.address)).toString()
+      );
+      const steps = 20;
+      await expect(deployerGame.testMove(steps, false)).to.emit(
+        deployerGame,
+        "CrossedGo"
+      );
+      const balAfter = new Big(
+        (await EPICDAI.balanceOf(deployer.address)).toString()
+      );
+      const reward = new Big(ethers.parseEther("10").toString());
+      assert.equal(balAfter.sub(balBefore).toFixed(), reward.toFixed()); //This shows that the user is receiving the air drop
+    });
     // Test case for buying, selling, and rebuying a property
-    it("user can buy, sell, and another user can buy the property chatg", async () => {});
+    it("user can buy, sell, and another user can buy the property ", async () => {
+      // Show the player moving
+      await deployerGame.testMove(2, false);
+
+      // Player is now at the location
+      const listOfProperties = await deployerGame.getActiveProperties();
+      const deployerNewPosition = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      console.log("New Deployer Position:", deployerNewPosition.toString());
+      assert.equal(deployerNewPosition.toString(), "2");
+      const property = await deployerGame.returnPropertyUnderPlayer(
+        deployer.address
+      );
+      assert.equal(property.toString(), listOfProperties[0]);
+
+      console.log("Time to purchase");
+      const amount = ethers.parseEther("65");
+      await EPICDAI.approve(deployerGame.target, amount.toString());
+      await deployerGame.purchaseProperty(
+        amount.toString(),
+        property.toString()
+      );
+      const list = await deployerGame.getMyProperties();
+      const propertyAmount = await deployerGame.getBalanceOfProperty(list[0]);
+      assert.equal(
+        propertyAmount.toString(),
+        ethers.parseEther("1").toString()
+      );
+
+      PROP = await ethers.getContractAt("Property", property.toString());
+      await PROP.approve(
+        deployerGame.target,
+        ethers.parseEther("10").toString()
+      );
+      await deployerGame.sellProperty(
+        ethers.parseEther("1").toString(),
+        property.toString()
+      );
+
+      console.log("User moving to the property location");
+      await userGame.testMove(2, false);
+      const userNewPosition = await userGame.getPlayerPosition(user.address);
+      console.log("New User Position:", userNewPosition.toString());
+      assert.equal(userNewPosition.toString(), "2");
+
+      console.log("User purchasing the property");
+      await userEPICDAI.approve(userGame.target, amount.toString());
+      await userGame.purchaseProperty(amount.toString(), property.toString());
+      const userList = await userGame.getMyProperties();
+      console.log(userList);
+      const userPropertyAmount = await userGame.getBalanceOfProperty(
+        userList[0]
+      );
+      console.log(userPropertyAmount.toString());
+      assert.equal(
+        userPropertyAmount.toString(),
+        ethers.parseEther("1").toString()
+      );
+
+      console.log("User selling the property");
+      await PROP.connect(user).approve(
+        userGame.target,
+        ethers.parseEther("10").toString()
+      );
+      await userGame.sellProperty(
+        ethers.parseEther("1").toString(),
+        property.toString()
+      );
+    });
   });
 });

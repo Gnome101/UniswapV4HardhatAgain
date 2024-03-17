@@ -35,7 +35,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     mapping(uint256 => address[]) usersThatOwn;
 
     string[] usualNamesAndSymbols;
-    uint256 constant MAX_STEPS = 40;
+    uint256 constant MAX_STEPS = 20;
     mapping(address => uint256) addressToGame;
 
     mapping(address => TokenInfo) getCurrencyInfo;
@@ -404,7 +404,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             return;
         }
         idToGameState[_gameID].playerPosition[player] += stepsFoward;
-        if (stepsFoward >= MAX_STEPS) {
+        if ( idToGameState[_gameID].playerPosition[player] >= MAX_STEPS) {
             emit CrossedGo(player);
             //Need to give the player moneys here!
             SafeERC20.safeTransfer(
@@ -580,7 +580,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             amountToSpend
         );
         // console.log("Game", address(this));
-        SafeERC20.safeApprove(
+        SafeERC20.forceApprove(
             IERC20(idToGameState[currentGameID].chosenCurrency),
             address(mainHook),
             amountToSpend + 1

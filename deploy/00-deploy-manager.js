@@ -18,22 +18,29 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     log: true,
     blockConfirmations: 2,
   });
-
-  args = [PoolManager.address];
-  const UniswapInteract = await deploy("UniswapInteract", {
-    from: deployer,
-    args: args,
-    log: true,
-    blockConfirmations: 2,
-  });
-  // if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
-  //   log("Verifying...");
-  //   await verify(
-  //     Router.address,
-  //     args,
-  //     "contracts/UniswapInteract.sol:UniswapInteract"
-  //   );
-  // }
+  if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
+    log("Verifying...");
+    await verify(
+      HookFactory.address,
+      args,
+      "contracts/Uniswap/V4-Core/PoolManager.sol:PoolManager"
+    );
+  }
+  // args = [PoolManager.address];
+  // const UniswapInteract = await deploy("UniswapInteract", {
+  //   from: deployer,
+  //   args: args,
+  //   log: true,
+  //   blockConfirmations: 2,
+  // });
+  // // if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
+  // //   log("Verifying...");
+  // //   await verify(
+  // //     Router.address,
+  // //     args,
+  // //     "contracts/UniswapInteract.sol:UniswapInteract"
+  // //   );
+  // // }
 
   args = [];
   const HookFactory = await deploy("UniswapHooksFactory", {
@@ -44,13 +51,13 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
 
   console.log("Chain", chainId);
-  // if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
-  //   log("Verifying...");
-  //   await verify(
-  //     HookFactory.address,
-  //     args,
-  //     "contracts/Utils/HooksFactory.sol:UniswapHooksFactory"
-  //   );
-  // }
+  if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
+    log("Verifying...");
+    await verify(
+      HookFactory.address,
+      args,
+      "contracts/Utils/HooksFactory.sol:UniswapHooksFactory"
+    );
+  }
 };
 module.exports.tags = ["all", "Need", "Local"];
