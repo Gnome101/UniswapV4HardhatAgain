@@ -16,8 +16,8 @@ const ETHERSCAN_API_KEY =
 
 const BASESCAN_API_KEY =
   process.env.BASESCAN_API_KEY || "Your etherscan API key";
-console.log(BASESCAN_API_KEY);
 
+const ARBSCAN_API_KEY = process.env.ARBSCAN_API_KEY || "Your etherscan API key";
 module.exports = {
   defaultNetwork: "hardhat",
   networks: {
@@ -33,10 +33,10 @@ module.exports = {
       chainId: 84532,
     },
     arb_sepolia: {
-      url: BASE_SEPOLIA_RPC_URL || "",
+      url: ARB_SEPOLIA_RPC_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      chainId: 84532,
+      chainId: 421614,
     },
     luke: {
       url: "https://chain.lukefoster.net/" || "",
@@ -77,6 +77,7 @@ module.exports = {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       base_sepolia: BASESCAN_API_KEY,
+      arb_sepolia: ARBSCAN_API_KEY,
     },
     customChains: [
       {
@@ -85,6 +86,14 @@ module.exports = {
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
           browserURL: "https://sepolia.basescan.org",
+        },
+      },
+      {
+        network: "arb_sepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://api-sepolia.arbiscan.io",
         },
       },
     ],

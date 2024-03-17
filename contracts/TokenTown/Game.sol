@@ -16,6 +16,8 @@ import {IHooks} from "../Uniswap/V4-Core/interfaces/IHooks.sol";
 import {TickMath} from "../Uniswap/V4-Core/libraries/TickMath.sol";
 
 import {IInterchainSecurityModule} from "../Hyperlane/NullISM.sol";
+// import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Custom} from "../Mocks/Custom.sol";
 
 contract Game is IGame /*, VRFConsumerBaseV2*/ {
     //Below is for chainlink
@@ -42,7 +44,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     mapping(address => TokenInfo) getCurrencyInfo;
 
-    address public ism;
+    address public ism = 0x1F02fA4F142e0727CC3f2eC84433aB513F977657;
 
     struct TokenInfo {
         uint8[4] priceStarts;
@@ -78,18 +80,22 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         );
     }
 
+    mapping(address => uint256) userBalance;
+
     // Implementing the start function from IGame
     function setUp(
         address activeUser,
-        address selectedToken,
+        address selToken,
         uint256 bankStart
-    ) external {
-        SafeERC20.safeTransferFrom(
-            IERC20(selectedToken),
-            activeUser,
-            address(this),
-            bankStart
-        );
+    ) public {
+        address selectedToken = mintWrapper(Custom(selToken));
+
+        // SafeERC20.safeTransferFrom(
+        //     IERC20(selectedToken),
+        //     activeUser,
+        //     address(this),
+        //     bankStart
+        // );
         idToGameState[gameID].players.push(activeUser);
         addressToGame[activeUser] = gameID;
         idToGameState[gameID].numberOfPlayers++;
@@ -199,7 +205,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         }
     }
 
-    function joinGame(address activeUser) external {
+    function joinGame(address activeUser) public {
         if (gameID == 0) {
             revert("No games exist");
         }
@@ -214,12 +220,13 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         addressToGame[activeUser] = curentGame;
         uint256 buyIn = idToGameState[curentGame].buyIn /
             idToGameState[curentGame].players.length;
-        SafeERC20.safeTransferFrom(
-            IERC20(idToGameState[curentGame].chosenCurrency),
-            activeUser,
-            address(this),
-            buyIn
-        );
+        // SafeERC20.safeTransferFrom(
+        //     IERC20(idToGameState[curentGame].chosenCurrency),
+        //     activeUser,
+        //     address(this),
+        //     buyIn
+        // );
+        Custom(idToGameState[curentGame].chosenCurrency).mint(buyIn);
         idToGameState[curentGame].buyIn += buyIn;
 
         idToGameState[curentGame].numberOfPlayers++;
@@ -235,7 +242,11 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         return buyIn;
     }
 
-    function startGame(address activeUser) external {
+    function getBalance(address user) public view returns (uint256) {
+        return userBalance[user];
+    }
+
+    function startGame(address activeUser) public {
         //This just starts the most recently made game
         //This will begin the game for all players, and begin a move for the first player.
         if (gameID == 0) {
@@ -250,14 +261,15 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             idToGameState[curentGameID].chosenCurrency
         ].userStart;
         if (amount == 0) {
-            amount = 70 * 10 ** 18;
+            amount = 100 * 10 ** 18;
         }
         for (uint i = 0; i < idToGameState[curentGameID].players.length; i++) {
-            SafeERC20.safeTransfer(
-                IERC20(idToGameState[curentGameID].chosenCurrency),
-                idToGameState[curentGameID].players[i],
-                amount
-            );
+            // SafeERC20.safeTransfer(
+            //     IERC20(idToGameState[curentGameID].chosenCurrency),
+            //     idToGameState[curentGameID].players[i],
+            //     amount
+            // );
+            userBalance[idToGameState[curentGameID].players[i]] = amount;
         }
     }
 
@@ -288,7 +300,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         }
     }
 
-    function beginMove(address activeUser) external {
+    function beginMove(address activeUser) public {
         require(gameID > 0, "No Game Created");
         uint256 currentGameID = addressToGame[activeUser];
         console.log(idToGameState[currentGameID].currentPlayer, activeUser);
@@ -366,7 +378,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         address activeUser,
         uint256 stepsFoward,
         bool rollAgain
-    ) external {
+    ) public {
         require(gameID > 0, "No Game Created");
         uint256 currentGameID = addressToGame[activeUser];
         // console.log(idToGameState[currentGameID].currentPlayer == activeUser);
@@ -423,11 +435,12 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         if (idToGameState[_gameID].playerPosition[player] >= MAX_STEPS) {
             emit CrossedGo(player);
             //Need to give the player moneys here!
-            SafeERC20.safeTransfer(
-                IERC20(idToGameState[_gameID].chosenCurrency),
-                player,
-                10 * 10 ** 18
-            );
+            // SafeERC20.safeTransfer(
+            //     IERC20(idToGameState[_gameID].chosenCurrency),
+            //     player,
+            //     10 * 10 ** 18
+            // );
+            userBalance[player] += 10 * 10 ** 18;
             //User arrived at the start
             idToGameState[_gameID].playerPosition[player] -= MAX_STEPS;
         }
@@ -444,11 +457,12 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                 emit FoundAsSybil(player);
             } else {
                 emit ReceivingAirdrop(player, stepsFoward * 10 ** 17);
-                SafeERC20.safeTransfer(
-                    IERC20(idToGameState[_gameID].chosenCurrency),
-                    player,
-                    stepsFoward * 10 ** 17
-                );
+                // SafeERC20.safeTransfer(
+                //     IERC20(idToGameState[_gameID].chosenCurrency),
+                //     player,
+                //     stepsFoward * 10 ** 17
+                // );
+                userBalance[player] += stepsFoward * 10 ** 17;
             }
             return;
         }
@@ -481,17 +495,19 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                         _removePlayer(player);
                         return;
                     }
-                    SafeERC20.safeTransferFrom(
-                        IERC20(idToGameState[_gameID].chosenCurrency),
-                        player,
-                        address(this),
-                        userRent
-                    );
-                    SafeERC20.safeTransfer(
-                        IERC20(idToGameState[_gameID].chosenCurrency),
-                        userList[i],
-                        userRent
-                    );
+                    userBalance[player] -= userRent;
+                    // SafeERC20.safeTransferFrom(
+                    //     IERC20(idToGameState[_gameID].chosenCurrency),
+                    //     player,
+                    //     address(this),
+                    //     userRent
+                    // );
+                    // SafeERC20.safeTransfer(
+                    //     IERC20(idToGameState[_gameID].chosenCurrency),
+                    //     userList[i],
+                    //     userRent
+                    // );
+                    userBalance[userList[i]] += userRent;
                     emit RentPaid(player, userRent);
                     console.log("Transfer funds", userRent);
                 }
@@ -548,13 +564,16 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                 )
             );
 
-            SafeERC20.safeTransfer(
-                IERC20(idToGameState[currentGame].chosenCurrency),
-                player,
-                IERC20(idToGameState[currentGame].chosenCurrency).balanceOf(
-                    address(this)
-                )
-            );
+            // SafeERC20.safeTransfer(
+            //     IERC20(idToGameState[currentGame].chosenCurrency),
+            //     player,
+            //     IERC20(idToGameState[currentGame].chosenCurrency).balanceOf(
+            //         address(this)
+            //     )
+            // );
+            userBalance[player] += IERC20(
+                idToGameState[currentGame].chosenCurrency
+            ).balanceOf(address(this));
         }
     }
 
@@ -590,12 +609,14 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             amountSpecified,
             sqrtPriceLimit
         );
-        SafeERC20.safeTransferFrom(
-            IERC20(idToGameState[currentGameID].chosenCurrency),
-            activeUser,
-            address(this),
-            amountToSpend
-        );
+        console.log(userBalance[activeUser], amountToSpend);
+        userBalance[activeUser] -= amountToSpend;
+        // SafeERC20.safeTransferFrom(
+        //     IERC20(idToGameState[currentGameID].chosenCurrency),
+        //     activeUser,
+        //     address(this),
+        //     amountToSpend
+        // );
         // console.log("Game", address(this));
         SafeERC20.forceApprove(
             IERC20(idToGameState[currentGameID].chosenCurrency),
@@ -674,12 +695,12 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                 rentExists[getPlayerPosition(activeUser)] = true;
             }
         }
-
-        SafeERC20.safeTransfer(
-            IERC20(idToGameState[currentGameID].chosenCurrency),
-            activeUser,
-            amountOwed
-        );
+        userBalance[activeUser] += amountOwed;
+        // SafeERC20.safeTransfer(
+        //     IERC20(idToGameState[currentGameID].chosenCurrency),
+        //     activeUser,
+        //     amountOwed
+        // );
     }
 
     mapping(address => uint256) public daysInJail;
@@ -830,13 +851,85 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     uint256 public messageCount;
 
-    //Hyperlane functions
+    function concatenate(
+        string memory a,
+        string memory b
+    ) public pure returns (string memory) {
+        return string(abi.encodePacked(a, b));
+    }
+
+    function mintWrapper(Custom oldAddress) public returns (address) {
+        string memory name = concatenate("TokenTown-", oldAddress.name());
+        string memory symb = concatenate("TTN-", oldAddress.symbol());
+
+        Custom custom = new Custom(name, symb);
+        return address(custom);
+    }
+
+    // Hyperlane functions
     function handle(
         uint32 _origin,
         bytes32 _sender,
         bytes calldata _message
     ) external payable {
         messageCount++;
+        (address user, uint256 action, bytes memory data) = abi.decode(
+            _message,
+            (address, uint256, bytes)
+        );
+
+        if (action == 0) {
+            console.log("Action 0");
+            //setUp()
+            (address selToken, uint256 bankStart) = abi.decode(
+                data,
+                (address, uint256)
+            );
+            setUp(user, selToken, bankStart);
+        } else if (action == 1) {
+            console.log("Action 1");
+            //joinGame()
+            // (address selToken, uint256 bankStart) = abi.decode(
+            //     data,
+            //     (address, uint256)
+            // );
+            //Need to transferTokens somehow
+
+            joinGame(user);
+        } else if (action == 2) {
+            console.log("Action 2");
+            //startGame()
+            startGame(user);
+        } else if (action == 3) {
+            console.log("Action 3");
+            //beginMove()
+            beginMove(user);
+        } else if (action == 4) {
+            console.log("Action 4");
+            (uint256 steps, bool snake) = abi.decode(data, (uint256, bool));
+            testMove(user, steps, snake);
+        } else if (action == 5) {
+            console.log("Action 5");
+            (uint256 amount, address property) = abi.decode(
+                data,
+                (uint256, address)
+            );
+            purchaseProperty(user, amount, property);
+            //purchaseProperty()
+        } else if (action == 6) {
+            console.log("Action 6");
+            (uint256 amount, address property) = abi.decode(
+                data,
+                (uint256, address)
+            );
+            sellProperty(user, amount, property);
+
+            //sellProperty()
+        } else if (action == 7) {
+            console.log("Action 7");
+        } else {
+            console.log("Not real");
+        }
     }
 
     function interchainSecurityModule()

@@ -14,10 +14,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     log: true,
     blockConfirmations: 2,
   });
-  if (chainId != 31337) {
-    log("Verifying...");
-    await verify(EPICDAI.address, args, "contracts/Mocks/EpicDai.sol:EPICDAI");
-  }
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(EPICDAI.address, args, "contracts/Mocks/EPICDAI.sol:NoopIsm");
+  // }
   const GNOME = await deploy("GNOME", {
     from: deployer,
     args: args,
@@ -43,14 +43,14 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const hookContract = await ethers.getContractAt("MyHook", hook);
 
   await hookContract.setGame(Game.address);
-  if (chainId != 31337) {
-    log("Verifying...");
-    await verify(Game.address, args, "contracts/TokenTown/Game.sol:Game");
-  }
-  args = [poolManager.target];
-  if (chainId != 31337) {
-    log("Verifying...");
-    await verify(hook, args, "contracts/MyHook.sol:MyHook");
-  }
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(Game.address, args, "contracts/TokenTown/Game.sol:Game");
+  // }
+  // args = [poolManager.target];
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(hook, args, "contracts/MyHook.sol:MyHook");
+  // }
 };
 module.exports.tags = ["all", "Tokens", "Local"];

@@ -1,0 +1,87 @@
+{
+  "address": "0x1F02fA4F142e0727CC3f2eC84433aB513F977657",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "moduleType",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "verify",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x337346132842b2450dacd7cece85e395c56790511bfe2d57e93a5ecf45bcb3bb",
+  "receipt": {
+    "to": null,
+    "from": "0x24715460e2a524725525c46F4A20f4C973e36d33",
+    "contractAddress": "0x1F02fA4F142e0727CC3f2eC84433aB513F977657",
+    "transactionIndex": 0,
+    "gasUsed": "17701425",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x7a5848752f4e98bac05ca32d132767f9a053914ffa26ac1bce8ae338aee5b858",
+    "transactionHash": "0x337346132842b2450dacd7cece85e395c56790511bfe2d57e93a5ecf45bcb3bb",
+    "logs": [],
+    "blockNumber": 13839,
+    "cumulativeGasUsed": "17701425",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "379cea7b481d2dc5ce11797b9fd3785e",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.24+commit.e11b9ed9\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"moduleType\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"verify\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"stateVariables\":{\"moduleType\":{\"details\":\"Relayers infer how to fetch and format metadata.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"moduleType()\":{\"notice\":\"Returns an enum that represents the type of security model encoded by this ISM.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/Hyperlane/NullISM.sol\":\"NoopIsm\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":1},\"remappings\":[]},\"sources\":{\"contracts/Hyperlane/Interfaces/IInterchainSecurityModule.sol\":{\"content\":\"// SPDX-License-Identifier: MIT OR Apache-2.0\\npragma solidity >=0.6.11;\\n\\ninterface IInterchainSecurityModule {\\n    enum Types {\\n        UNUSED,\\n        ROUTING,\\n        AGGREGATION,\\n        LEGACY_MULTISIG,\\n        MERKLE_ROOT_MULTISIG,\\n        MESSAGE_ID_MULTISIG,\\n        NULL, // used with relayer carrying no metadata\\n        CCIP_READ\\n    }\\n\\n    /**\\n     * @notice Returns an enum that represents the type of security model\\n     * encoded by this ISM.\\n     * @dev Relayers infer how to fetch and format metadata.\\n     */\\n    function moduleType() external view returns (uint8);\\n\\n    /**\\n     * @notice Defines a security model responsible for verifying interchain\\n     * messages based on the provided metadata.\\n     * @param _metadata Off-chain metadata provided by a relayer, specific to\\n     * the security model encoded by the module (e.g. validator signatures)\\n     * @param _message Hyperlane encoded interchain message\\n     * @return True if the message was verified\\n     */\\n    function verify(\\n        bytes calldata _metadata,\\n        bytes calldata _message\\n    ) external returns (bool);\\n}\\n\\ninterface ISpecifiesInterchainSecurityModule {\\n    function interchainSecurityModule()\\n        external\\n        view\\n        returns (IInterchainSecurityModule);\\n}\\n\",\"keccak256\":\"0xd144a00a15eef18012f8dae28ca1a7d965012f88ff4a07382a172ae6e02811ce\",\"license\":\"MIT OR Apache-2.0\"},\"contracts/Hyperlane/NullISM.sol\":{\"content\":\"// SPDX-License-Identifier: MIT OR Apache-2.0\\npragma solidity >=0.8.0;\\n\\nimport {IInterchainSecurityModule} from \\\"contracts/Hyperlane/Interfaces/IInterchainSecurityModule.sol\\\";\\n\\ncontract NoopIsm is IInterchainSecurityModule {\\n    uint8 public constant override moduleType = uint8(Types.NULL);\\n\\n    function verify(\\n        bytes calldata,\\n        bytes calldata\\n    ) public pure override returns (bool) {\\n        return true;\\n    }\\n}\\n\",\"keccak256\":\"0x7c3d01ab4ea5b1aa28639ed85b9b54e9dad6b47cac4409e6258c7199374eddaf\",\"license\":\"MIT OR Apache-2.0\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561000f575f80fd5b5061015f8061001d5f395ff3fe608060405234801561000f575f80fd5b5060043610610034575f3560e01c80636465e69f14610038578063f7e83aee14610057575b5f80fd5b610040600681565b60405160ff90911681526020015b60405180910390f35b61006f6100653660046100c3565b6001949350505050565b604051901515815260200161004e565b5f8083601f84011261008f575f80fd5b5081356001600160401b038111156100a5575f80fd5b6020830191508360208285010111156100bc575f80fd5b9250929050565b5f805f80604085870312156100d6575f80fd5b84356001600160401b03808211156100ec575f80fd5b6100f88883890161007f565b90965094506020870135915080821115610110575f80fd5b5061011d8782880161007f565b9598949750955050505056fea2646970667358221220ceb3ad3b0e8d734b4e5332637430e74b6fe8d87f85c1b3b29d19fb2a298101ec64736f6c63430008180033",
+  "deployedBytecode": "0x608060405234801561000f575f80fd5b5060043610610034575f3560e01c80636465e69f14610038578063f7e83aee14610057575b5f80fd5b610040600681565b60405160ff90911681526020015b60405180910390f35b61006f6100653660046100c3565b6001949350505050565b604051901515815260200161004e565b5f8083601f84011261008f575f80fd5b5081356001600160401b038111156100a5575f80fd5b6020830191508360208285010111156100bc575f80fd5b9250929050565b5f805f80604085870312156100d6575f80fd5b84356001600160401b03808211156100ec575f80fd5b6100f88883890161007f565b90965094506020870135915080821115610110575f80fd5b5061011d8782880161007f565b9598949750955050505056fea2646970667358221220ceb3ad3b0e8d734b4e5332637430e74b6fe8d87f85c1b3b29d19fb2a298101ec64736f6c63430008180033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "stateVariables": {
+      "moduleType": {
+        "details": "Relayers infer how to fetch and format metadata."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "moduleType()": {
+        "notice": "Returns an enum that represents the type of security model encoded by this ISM."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
