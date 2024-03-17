@@ -10,6 +10,7 @@
     "@openzeppelin/contracts": "^4.9.2",
     "big.js": "^6.2.1",
     "chai": "^4.3.10",
+    "dotenv": "^16.4.5",
     "ethers": "^6.10.0",
     "hardhat": "^2.17.5",
     "hardhat-contract-sizer": "^2.10.0",

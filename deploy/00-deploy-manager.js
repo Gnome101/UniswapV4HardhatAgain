@@ -21,7 +21,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
     log("Verifying...");
     await verify(
-      HookFactory.address,
+      PoolManager.address,
       args,
       "contracts/Uniswap/V4-Core/PoolManager.sol:PoolManager"
     );
@@ -60,4 +60,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     );
   }
 };
-module.exports.tags = ["all", "Need", "Local"];
+module.exports.tags = ["1", "Need", "Local"];

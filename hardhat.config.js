@@ -5,7 +5,18 @@ require("solidity-coverage");
 require("hardhat-gas-reporter");
 require("hardhat-contract-sizer");
 require("@nomicfoundation/hardhat-chai-matchers");
-// require("dotenv").config();
+require("dotenv").config();
+const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
+const ARB_SEPOLIA_RPC_URL = process.env.ARB_SEPOLIA_RPC_URL;
+
+const REPORT_GAS = process.env.REPORT_GAS || false;
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x";
+const ETHERSCAN_API_KEY =
+  process.env.ETHERSCAN_API_KEY || "Your etherscan API key";
+
+const BASESCAN_API_KEY =
+  process.env.BASESCAN_API_KEY || "Your etherscan API key";
+console.log(BASESCAN_API_KEY);
 
 module.exports = {
   defaultNetwork: "hardhat",
@@ -14,6 +25,18 @@ module.exports = {
       allowUnlimitedContractSize: true,
       chainId: 31337,
       blockGasLimit: 100000000, // Set your desired gas limit here
+    },
+    base_sepolia: {
+      url: BASE_SEPOLIA_RPC_URL || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 84532,
+    },
+    arb_sepolia: {
+      url: BASE_SEPOLIA_RPC_URL || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 84532,
     },
   },
 
@@ -39,6 +62,23 @@ module.exports = {
               yul: true,
             },
           },
+        },
+      },
+    ],
+  },
+  etherscan: {
+    // yarn hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
+    apiKey: {
+      mainnet: ETHERSCAN_API_KEY,
+      base_sepolia: BASESCAN_API_KEY,
+    },
+    customChains: [
+      {
+        network: "base_sepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org",
         },
       },
     ],
