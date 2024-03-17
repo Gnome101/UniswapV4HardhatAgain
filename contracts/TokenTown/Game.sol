@@ -595,12 +595,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             amountToSpend + 1
         );
 
-        (int256 amount0, int256 amount1) = mainHook.swap(
-            pk,
-            params,
-            block.timestamp + 100,
-            activeUser
-        );
+        mainHook.swap(pk, params, block.timestamp + 100, activeUser);
         uint256 currentPosition = getPlayerPosition(activeUser);
         console.log("Property purchased", currentPosition);
         rentExists[currentPosition] = true;
@@ -621,20 +616,22 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         PoolKey memory pk = addressToKey[property];
 
         //Assume that the currency is token0 and the property is token1
-        bool zeroForOne = false;
-        uint160 sqrtPriceLimit = 1461446703485210103287273052203988822378723970342;
+        IPoolManager.SwapParams memory params;
+        {
+            bool zeroForOne = false;
+            uint160 sqrtPriceLimit = 1461446703485210103287273052203988822378723970342;
 
-        if (property < idToGameState[currentGameID].chosenCurrency) {
-            zeroForOne = true;
-            sqrtPriceLimit = 4295128740;
+            if (property < idToGameState[currentGameID].chosenCurrency) {
+                zeroForOne = true;
+                sqrtPriceLimit = 4295128740;
+            }
+            int256 amountSpecified = int256(amountToSell);
+            params = IPoolManager.SwapParams(
+                zeroForOne,
+                amountSpecified,
+                sqrtPriceLimit
+            );
         }
-        int256 amountSpecified = int256(amountToSell);
-
-        IPoolManager.SwapParams memory params = IPoolManager.SwapParams(
-            zeroForOne,
-            amountSpecified,
-            sqrtPriceLimit
-        );
         SafeERC20.safeTransferFrom(
             IERC20(property),
             activeUser,
@@ -661,13 +658,12 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         if (amount1 < 0) {
             amountOwed = uint256(-1 * amount1);
         }
-        uint256 currentPosition = getPlayerPosition(activeUser);
         address[] memory userList = idToGameState[currentGameID].players;
 
-        rentExists[currentPosition] = false;
+        rentExists[getPlayerPosition(activeUser)] = false;
         for (uint i = 0; i < userList.length; i++) {
             if (Property(property).balanceOf(userList[i]) > 0) {
-                rentExists[currentPosition] = true;
+                rentExists[getPlayerPosition(activeUser)] = true;
             }
         }
 
@@ -823,6 +819,8 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                 address(this)
             );
     }
+
+    //Hyperlane functions
 }
 
 //Idea for how game is going to work
