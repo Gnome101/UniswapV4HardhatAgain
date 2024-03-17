@@ -22,11 +22,11 @@ contract ArbRandom is VRFV2WrapperConsumerBase {
 
     address public ism = 0xc1Bf61B01b00A44aC253Ef66f9de52DAdb99D943;
 
-    uint32 thisDomain;
-    uint32 baseSepDomain;
+    uint32 thisDomain = 421614;
+    uint32 baseSepDomain = 84532;
 
-    address thisMailBox;
-    address arbSepMailBox;
+    address thisMailBox = 0x98F4B1FB7Ba2737590FB1349b49758bE05d9b35c;
+    address baseBox = 0x39ce94a1E6aA7b9CDb9278D09c3b6A2c54F58fD4;
 
     address gameInteract;
     struct RequestStatus {
@@ -34,6 +34,11 @@ contract ArbRandom is VRFV2WrapperConsumerBase {
         bool fulfilled;
         uint256[] randomWords;
     }
+
+    function setGameInteract(address gI) public {
+        gameInteract = gI;
+    }
+
     mapping(uint256 => RequestStatus) public s_requests;
 
     uint256[] public requestIds;

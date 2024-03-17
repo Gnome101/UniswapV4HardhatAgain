@@ -20,11 +20,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   });
   if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
     log("Verifying...");
-    await verify(
-      PoolManager.address,
-      args,
-      "contracts/Uniswap/V4-Core/PoolManager.sol:PoolManager"
-    );
+    // await verify(
+    //   PoolManager.address,
+    //   args,
+    //   "contracts/Uniswap/V4-Core/PoolManager.sol:PoolManager"
+    // );
   }
   // args = [PoolManager.address];
   // const UniswapInteract = await deploy("UniswapInteract", {
@@ -53,11 +53,11 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   console.log("Chain", chainId);
   if (chainId != 31337 && process.env.ETHERSCAN_API_KEY) {
     log("Verifying...");
-    await verify(
-      HookFactory.address,
-      args,
-      "contracts/Utils/HooksFactory.sol:UniswapHooksFactory"
-    );
+    // await verify(
+    //   HookFactory.address,
+    //   args,
+    //   "contracts/Utils/HooksFactory.sol:UniswapHooksFactory"
+    // );
   }
 };
-module.exports.tags = ["1", "Need", "Local"];
+module.exports.tags = ["1", "Need", "Local", "luke"];

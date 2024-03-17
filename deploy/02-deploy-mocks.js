@@ -24,10 +24,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     log: true,
     blockConfirmations: 2,
   });
-  if (chainId != 31337) {
-    log("Verifying...");
-    await verify(GNOME.address, args, "contracts/Mocks/GNOME.sol:GNOME");
-  }
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(GNOME.address, args, "contracts/Mocks/GNOME.sol:GNOME");
+  // }
   const poolManager = await ethers.getContract("PoolManager");
 
   const hookFactory = await ethers.getContract("UniswapHooksFactory");
@@ -35,6 +35,23 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   const hook = await hookFactory.hooks(0); //This is the hook created in 01-find-hook.js
   args = [poolManager.target, hook];
   const Game = await deploy("Game", {
+    from: deployer,
+    args: args,
+    log: true,
+    blockConfirmations: 2,
+  });
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(Game.address, args, "contracts/TokenTown/Game.sol:Game");
+  // }
+
+  args = [poolManager.target];
+  // if (chainId != 31337) {
+  //   log("Verifying...");
+  //   await verify(hook, args, "contracts/MyHook.sol:MyHook");
+  // }
+  args = [Game.address];
+  const LukeRecieve = await deploy("LukeRecieve", {
     from: deployer,
     args: args,
     log: true,
@@ -53,4 +70,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   //   await verify(hook, args, "contracts/MyHook.sol:MyHook");
   // }
 };
-module.exports.tags = ["all", "Tokens", "Local"];
+module.exports.tags = ["all", "Tokens", "Local", "luke"];

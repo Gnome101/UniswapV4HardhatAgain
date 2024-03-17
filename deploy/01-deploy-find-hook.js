@@ -62,4 +62,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   console.log("Hooks deployed with address:", result.finalAddress);
   console.log("Chain", chainId);
 };
-module.exports.tags = ["all", "Need", "Local"];
+module.exports.tags = ["all", "Need", "Local", "luke"];

@@ -19,11 +19,8 @@ import {IInterchainSecurityModule} from "../Hyperlane/NullISM.sol";
 // import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Custom} from "../Mocks/Custom.sol";
 
-contract Game is IGame /*, VRFConsumerBaseV2*/ {
+contract Game is IGame {
     //Below is for chainlink
-    bytes32 internal keyHash;
-    uint256 internal fee;
-    uint256 public randomResult;
 
     address public immutable poolManager;
     MyHook public immutable mainHook;
@@ -36,7 +33,6 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     mapping(address => uint256) public userRollsRow; //# of rolls in a row
 
     mapping(uint256 => bool) rentExists;
-    mapping(uint256 => address[]) usersThatOwn;
 
     string[] usualNamesAndSymbols;
     uint256 constant MAX_STEPS = 20;
@@ -68,17 +64,13 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         // console.log("Pool Manager set to:", poolManager);
     }
 
-    function setISM(address im) external {
-        ism = im;
-    }
-
     //Function for testing
-    function reclaimTokens(address token) external {
-        IERC20(token).transfer(
-            msg.sender,
-            IERC20(token).balanceOf(address(this))
-        );
-    }
+    // function reclaimTokens(address token) external {
+    //     IERC20(token).transfer(
+    //         msg.sender,
+    //         IERC20(token).balanceOf(address(this))
+    //     );
+    // }
 
     mapping(address => uint256) userBalance;
 
@@ -207,13 +199,13 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     function joinGame(address activeUser) public {
         if (gameID == 0) {
-            revert("No games exist");
+            revert("");
         }
         uint256 curentGame = gameID - 1;
         address[] memory list = idToGameState[curentGame].players;
         for (uint i = 0; i < list.length; i++) {
             if (activeUser == list[i]) {
-                revert("Can not join twice");
+                revert("");
             }
         }
         idToGameState[curentGame].players.push(activeUser);
@@ -232,15 +224,15 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         idToGameState[curentGame].numberOfPlayers++;
     }
 
-    function getBuyIn() public view returns (uint256) {
-        if (gameID == 0) {
-            revert("No games exist");
-        }
-        uint256 curentGame = gameID - 1;
-        uint256 buyIn = idToGameState[curentGame].buyIn /
-            idToGameState[curentGame].players.length;
-        return buyIn;
-    }
+    // function getBuyIn() public view returns (uint256) {
+    //     if (gameID == 0) {
+    //         revert("No games exist");
+    //     }
+    //     uint256 curentGame = gameID - 1;
+    //     uint256 buyIn = idToGameState[curentGame].buyIn /
+    //         idToGameState[curentGame].players.length;
+    //     return buyIn;
+    // }
 
     function getBalance(address user) public view returns (uint256) {
         return userBalance[user];
@@ -250,7 +242,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         //This just starts the most recently made game
         //This will begin the game for all players, and begin a move for the first player.
         if (gameID == 0) {
-            revert("A game has not been setUp() yet");
+            revert("");
         }
         uint256 curentGameID = gameID - 1;
         userRoll[activeUser] = true;
@@ -273,75 +265,39 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         }
     }
 
-    function _rollDice(
-        address activeUser
-    ) public returns (bool snake, uint256 total) {
-        //Upon implementation add chainlink here
-        uint256 dice1 = (uint256(
-            keccak256(
-                abi.encodePacked(block.timestamp, block.prevrandao, activeUser)
-            )
-        ) % 6) + 1;
+    // function _rollDice(
+    //     address activeUser
+    // ) public returns (bool snake, uint256 total) {
+    //     //Upon implementation add chainlink here
+    //     uint256 dice1 = (uint256(
+    //         keccak256(
+    //             abi.encodePacked(block.timestamp, block.prevrandao, activeUser)
+    //         )
+    //     ) % 6) + 1;
 
-        uint256 dice2 = (uint256(
-            keccak256(
-                abi.encodePacked(
-                    block.timestamp,
-                    block.prevrandao,
-                    activeUser,
-                    dice1
-                )
-            )
-        ) % 6) + 1;
-        total = dice1 + dice2;
-        emit RolledDice(activeUser, dice1, dice2);
-        if (dice1 == dice2) {
-            snake = true;
-        }
-    }
-
-    function beginMove(address activeUser) public {
-        require(gameID > 0, "No Game Created");
-        uint256 currentGameID = addressToGame[activeUser];
-        console.log(idToGameState[currentGameID].currentPlayer, activeUser);
-        require(
-            idToGameState[currentGameID].currentPlayer == activeUser,
-            "Must be current Player"
-        );
-
-        require(userRoll[activeUser], "User cannot roll");
-        userRoll[activeUser] = false;
-        (bool rollAgain, uint256 stepsFoward) = _rollDice(activeUser); //We would stop here and wait for chainlink to respnd if using it
-        if (userInJail[activeUser]) {
-            if (rollAgain) {
-                //User leaves jail
-                userInJail[activeUser] = false;
-            }
-            stepsFoward = 0;
-            rollAgain = false;
-        }
-        console.log(stepsFoward, rollAgain);
-        if (rollAgain) {
-            userRoll[activeUser] = true;
-            userRollsRow[activeUser]++;
-            if (userRollsRow[activeUser] > 3) {
-                sendUserToJail(activeUser);
-            }
-        }
-
-        _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
-        if (!userRoll[activeUser]) {
-            //As long as the user cannot roll again then progress
-            _incrementGameState(currentGameID);
-        }
-    }
+    //     uint256 dice2 = (uint256(
+    //         keccak256(
+    //             abi.encodePacked(
+    //                 block.timestamp,
+    //                 block.prevrandao,
+    //                 activeUser,
+    //                 dice1
+    //             )
+    //         )
+    //     ) % 6) + 1;
+    //     total = dice1 + dice2;
+    //     emit RolledDice(activeUser, dice1, dice2);
+    //     if (dice1 == dice2) {
+    //         snake = true;
+    //     }
+    // }
 
     function _incrementGameState(uint256 _gameID) internal {
         address newPlayer = _getNextPlayer(_gameID);
 
-        console.log("Changing player to", newPlayer);
+        // console.log("Changing player to", newPlayer);
         address oldCurrentPlayer = idToGameState[_gameID].currentPlayer;
-        console.log("player", oldCurrentPlayer, newPlayer);
+        // console.log("player", oldCurrentPlayer, newPlayer);
 
         require(
             !userRoll[oldCurrentPlayer],
@@ -394,7 +350,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             daysInJail[activeUser]++;
             // console.log(daysInJail[activeUser]);
             if (rollAgain || daysInJail[activeUser] >= 2) {
-                console.log("User leaves jail");
+                // console.log("User leaves jail");
                 //User leaves jail
                 userInJail[activeUser] = false;
             }
@@ -413,15 +369,6 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
         _incrementGameState(currentGameID);
     }
-
-    // function fulfillRandomness(
-    //     bytes32 requestId,
-    //     uint256 randomness
-    // ) internal override {
-    //     randomResult = randomness;
-    //     // Add additional logic to handle randomness
-    // _updatePlayerPosition(currentGameID, activeUser, stepsFoward);
-    // }
 
     function _updatePlayerPosition(
         uint256 _gameID,
@@ -453,17 +400,15 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         if (finalPosition == 10) {
             //They are getting an air drop
             //Deposit their total number of steps up until that point
-            if (1 == 2) {
-                emit FoundAsSybil(player);
-            } else {
-                emit ReceivingAirdrop(player, stepsFoward * 10 ** 17);
-                // SafeERC20.safeTransfer(
-                //     IERC20(idToGameState[_gameID].chosenCurrency),
-                //     player,
-                //     stepsFoward * 10 ** 17
-                // );
-                userBalance[player] += stepsFoward * 10 ** 17;
-            }
+
+            emit ReceivingAirdrop(player, stepsFoward * 10 ** 17);
+            // SafeERC20.safeTransfer(
+            //     IERC20(idToGameState[_gameID].chosenCurrency),
+            //     player,
+            //     stepsFoward * 10 ** 17
+            // );
+            userBalance[player] += stepsFoward * 10 ** 17;
+
             return;
         }
         if (finalPosition == 15) {
@@ -473,7 +418,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         if (finalPosition == 0) {
             return;
         }
-        console.log("RE", rentExists[finalPosition], finalPosition);
+        // console.log("RE", rentExists[finalPosition], finalPosition);
         if (rentExists[finalPosition]) {
             //Rent exists on this point, take money
             Property activeProp = getProperty(finalPosition);
@@ -509,7 +454,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
                     // );
                     userBalance[userList[i]] += userRent;
                     emit RentPaid(player, userRent);
-                    console.log("Transfer funds", userRent);
+                    // console.log("Transfer funds", userRent);
                 }
             }
         }
@@ -552,9 +497,9 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         idToGameState[currentGame].players.pop();
 
         // Decrement the number of players
-        console.log(idToGameState[currentGame].players.length);
+        // console.log(idToGameState[currentGame].players.length);
         idToGameState[currentGame].numberOfPlayers--;
-        console.log(idToGameState[currentGame].players.length);
+        // console.log(idToGameState[currentGame].players.length);
         if (idToGameState[currentGame].players.length == 1) {
             //A player can win
             emit PlayerWon(
@@ -609,7 +554,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             amountSpecified,
             sqrtPriceLimit
         );
-        console.log(userBalance[activeUser], amountToSpend);
+        // console.log(userBalance[activeUser], amountToSpend);
         userBalance[activeUser] -= amountToSpend;
         // SafeERC20.safeTransferFrom(
         //     IERC20(idToGameState[currentGameID].chosenCurrency),
@@ -626,7 +571,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
         mainHook.swap(pk, params, block.timestamp + 100, activeUser);
         uint256 currentPosition = getPlayerPosition(activeUser);
-        console.log("Property purchased", currentPosition);
+        // console.log("Property purchased", currentPosition);
         rentExists[currentPosition] = true;
 
         SafeERC20.safeTransfer(
@@ -706,7 +651,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
     mapping(address => uint256) public daysInJail;
     mapping(address => bool) public userInJail;
 
-    function sendUserToJail(address user) public {
+    function sendUserToJail(address user) internal {
         emit SentToJail(user);
         daysInJail[user] = 0;
         userInJail[user] = true;
@@ -761,7 +706,7 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         returns (Property[] memory list)
     {
         if (gameID == 0) {
-            revert("No game yet");
+            revert("");
         }
         uint256 currentGameID = gameID - 1;
         return idToGameState[currentGameID].propertyList;
@@ -851,86 +796,25 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     uint256 public messageCount;
 
-    function concatenate(
-        string memory a,
-        string memory b
-    ) public pure returns (string memory) {
-        return string(abi.encodePacked(a, b));
-    }
-
     function mintWrapper(Custom oldAddress) public returns (address) {
-        string memory name = concatenate("TokenTown-", oldAddress.name());
-        string memory symb = concatenate("TTN-", oldAddress.symbol());
+        string memory name = "Token Town";
+        string memory symb = "TTN";
 
         Custom custom = new Custom(name, symb);
         return address(custom);
     }
 
-    // Hyperlane functions
-    function handle(
-        uint32 _origin,
-        bytes32 _sender,
-        bytes calldata _message
-    ) external payable {
-        messageCount++;
-        (address user, uint256 action, bytes memory data) = abi.decode(
-            _message,
-            (address, uint256, bytes)
-        );
-
-        if (action == 0) {
-            console.log("Action 0");
-            //setUp()
-            (address selToken, uint256 bankStart) = abi.decode(
-                data,
-                (address, uint256)
-            );
-            setUp(user, selToken, bankStart);
-        } else if (action == 1) {
-            console.log("Action 1");
-            //joinGame()
-            // (address selToken, uint256 bankStart) = abi.decode(
-            //     data,
-            //     (address, uint256)
-            // );
-            //Need to transferTokens somehow
-
-            joinGame(user);
-        } else if (action == 2) {
-            console.log("Action 2");
-            //startGame()
-            startGame(user);
-        } else if (action == 3) {
-            console.log("Action 3");
-            //beginMove()
-            beginMove(user);
-        } else if (action == 4) {
-            console.log("Action 4");
-            (uint256 steps, bool snake) = abi.decode(data, (uint256, bool));
-            testMove(user, steps, snake);
-        } else if (action == 5) {
-            console.log("Action 5");
-            (uint256 amount, address property) = abi.decode(
-                data,
-                (uint256, address)
-            );
-            purchaseProperty(user, amount, property);
-            //purchaseProperty()
-        } else if (action == 6) {
-            console.log("Action 6");
-            (uint256 amount, address property) = abi.decode(
-                data,
-                (uint256, address)
-            );
-            sellProperty(user, amount, property);
-
-            //sellProperty()
-        } else if (action == 7) {
-            console.log("Action 7");
-        } else {
-            console.log("Not real");
+    function getBuyIn() public view returns (uint256) {
+        if (gameID == 0) {
+            revert("No games exist");
         }
+        uint256 curentGame = gameID - 1;
+        uint256 buyIn = idToGameState[curentGame].buyIn /
+            idToGameState[curentGame].players.length;
+        return buyIn;
     }
+
+    // Hyperlane functions
 
     function interchainSecurityModule()
         external

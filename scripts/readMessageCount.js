@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 async function main() {
-  const Game = await ethers.getContract("Game");
-  const messageCount = await Game.messageCount();
+  const LukeRecieve = await ethers.getContract("LukeRecieve");
+  const messageCount = await LukeRecieve.messageCount();
   console.log("Message count", messageCount);
 }
 main().catch((error) => {

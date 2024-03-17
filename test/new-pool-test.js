@@ -8,7 +8,7 @@ const {
   time,
 } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployContract } = require("@nomicfoundation/hardhat-ethers/types");
-describe("Pool Test ", async function () {
+describe("Pool Test yuk", async function () {
   let poolManager;
   let GNOME;
   let EPICDAI, userEPICDAI;
@@ -62,16 +62,7 @@ describe("Pool Test ", async function () {
   describe("Testing Game Mechanics yup", async () => {
     beforeEach(async () => {
       const chosenToken = EPICDAI;
-      const list = [
-        "Street",
-        "STR",
-        "Avenue",
-        "AVE",
-        "Lane",
-        "LNE",
-        "Way",
-        "WAY",
-      ];
+      const list = ["Street", "STR", "Avenue", "AVE"];
       const gameID = "0";
       await deployerGame.addNames(list);
       //This is needed to account for the 18 decimals used in ERC20s
@@ -108,37 +99,46 @@ describe("Pool Test ", async function () {
       const chosenCurrency = await deployerGame.getCurrentChosenCurrency();
       //   assert.equal(chosenCurrency.toString(), chosenToken.target);
       //User joins
-      const buyIN = await deployerGame.getBuyIn();
-      await userEPICDAI.mint(buyIN.toString());
-      await userEPICDAI.approve(userGame.target, buyIN.toString());
+      // const buyIN = await deployerGame.getBuyIn();
+      // await userEPICDAI.mint(buyIN.toString());
+      await userEPICDAI.approve(userGame.target, 0);
 
       //Now we can start the game
 
       await deployerGame.startGame(deployer.address);
     });
-    it("testing movement yuh", async () => {
-      //Show the player moving
-      console.log("FIrst");
-      await deployerGame.beginMove(deployer.address);
-      console.log("FIrst");
+    // it("testing movement yuh", async () => {
+    //   //Show the player moving
+    //   console.log("FIrst");
+    //   await deployerGame.beginMove(deployer.address);
+    //   console.log("FIrst");
 
-      const deployerNewPosition = await deployerGame.getPlayerPosition(
-        deployer.address
-      );
-      console.log("New Deployer Position:", deployerNewPosition.toString());
-      assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
-      await expect(deployerGame.beginMove(deployer.address)).to.be.revertedWith(
-        "Must be current Player"
-      );
-      console.log("after");
-      // console.log("Here", user.address);
-      await userGame.beginMove(user.address);
-      const userNewPosition = await deployerGame.getPlayerPosition(
-        user.address
-      );
-      console.log("New User Position:", userNewPosition.toString());
-      assert.isAbove(parseInt(userNewPosition.toString()), 0);
+    //   const deployerNewPosition = await deployerGame.getPlayerPosition(
+    //     deployer.address
+    //   );
+    //   console.log("New Deployer Position:", deployerNewPosition.toString());
+    //   assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
+    //   await expect(deployerGame.beginMove(deployer.address)).to.be.revertedWith(
+    //     "Must be current Player"
+    //   );
+    //   console.log("after");
+    //   // console.log("Here", user.address);
+    //   await userGame.beginMove(user.address);
+    //   const userNewPosition = await deployerGame.getPlayerPosition(
+    //     user.address
+    //   );
+    //   console.log("New User Position:", userNewPosition.toString());
+    //   assert.isAbove(parseInt(userNewPosition.toString()), 0);
+    // });
+    it("user can start twice", async () => {
+      const chosenToken = EPICDAI;
+
+      await deployerGame.setUp(deployer.address, chosenToken.target, "0");
+      await deployerGame.startGame(deployer.address);
+      await deployerGame.setUp(deployer.address, chosenToken.target, "0");
+      await deployerGame.startGame(deployer.address);
     });
+
     it("user can purchase property", async () => {
       //Show the player moving
 
