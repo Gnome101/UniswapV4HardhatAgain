@@ -11,8 +11,12 @@ interface IGame {
     event CrossedGo(address indexed player);
     event RolledDice(address indexed player, uint256 dice1, uint256 dice2);
     event VisitJail(address indexed player);
-    event ReceivingAirdrop(address indexed player);
+    event SentToJail(address indexed player);
+    event PlayerWon(address indexed player, uint256 amount);
+    event ReceivingAirdrop(address indexed player, uint256 amount);
     event FoundAsSybil(address indexed player);
+    event RentPaid(address indexed player, uint256 amount);
+    event UserLose(address indexed player);
 
     type player is address;
 
@@ -25,5 +29,6 @@ interface IGame {
         mapping(address => uint256) playerPosition; //Goes from player address to position on board
         mapping(address => address) playerOwnedProperty;
         Property[] propertyList; //List of all properties
+        uint256 buyIn;
     }
 }

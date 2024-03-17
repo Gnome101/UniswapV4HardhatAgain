@@ -8,7 +8,7 @@ contract EPICDAI is ERC20 {
         _mint(msg.sender, 10 * 10 ** 18);
     }
 
-    function mint() public {
-        // _mint(msg.sender, 10000 * 10 ** 18);
+    function mint(uint256 amount) public {
+        _mint(msg.sender, amount);
     }
 }

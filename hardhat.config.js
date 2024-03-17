@@ -4,6 +4,7 @@ require("@nomiclabs/hardhat-ethers");
 require("solidity-coverage");
 require("hardhat-gas-reporter");
 require("hardhat-contract-sizer");
+require("@nomicfoundation/hardhat-chai-matchers");
 // require("dotenv").config();
 
 module.exports = {
@@ -12,6 +13,7 @@ module.exports = {
     hardhat: {
       allowUnlimitedContractSize: true,
       chainId: 31337,
+      blockGasLimit: 100000000, // Set your desired gas limit here
     },
   },
 

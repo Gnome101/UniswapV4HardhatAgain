@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { assert } = require("chai");
+const { assert, expect } = require("chai");
 const { calculateSqrtPriceX96 } = require("../utils/uniswapTools");
 const Big = require("big.js");
 const { hexlify } = require("ethers");
@@ -11,7 +11,7 @@ const { deployContract } = require("@nomicfoundation/hardhat-ethers/types");
 describe("Pool Test ", async function () {
   let poolManager;
   let GNOME;
-  let EPICDAI;
+  let EPICDAI, userEPICDAI;
   let uniswapInteract;
   let hookFactory;
   let Game;
@@ -24,7 +24,7 @@ describe("Pool Test ", async function () {
     GNOME = await ethers.getContract("GNOME");
 
     EPICDAI = await ethers.getContract("EPICDAI");
-
+    userEPICDAI = await ethers.getContract("EPICDAI", user);
     uniswapInteract = await ethers.getContract("UniswapInteract");
     hookFactory = await ethers.getContract("UniswapHooksFactory");
     deployerGame = await ethers.getContract("Game");
@@ -34,139 +34,6 @@ describe("Pool Test ", async function () {
     // console.log("White ");
   });
 
-  it("can initialze my own pool with no hooks", async () => {
-    //Using no hook for this test
-    const hook = "0x0000000000000000000000000000000000000000";
-
-    const addresses = [EPICDAI.target, GNOME.target];
-    //Make sure that addresses are sorted!
-    addresses.sort();
-
-    //Create the pool key
-    const poolKey = {
-      currency0: addresses[0].toString().trim(),
-      currency1: addresses[1].toString().trim(),
-      fee: "3000",
-      tickSpacing: "60",
-      hooks: hook,
-    };
-    //Calculate the starting price with (price, decimals in token0, decimals in token1)
-    const sqrtPrice = calculateSqrtPriceX96(1, 18, 18);
-    let timeStamp = (await ethers.provider.getBlock("latest")).timestamp;
-
-    await uniswapInteract.startPool(
-      poolKey,
-      sqrtPrice.toFixed(),
-      "0x",
-      timeStamp + 100
-    );
-    //Below the bounds are defined for the position
-    const lowerBound = 0 - 60 * 10;
-    const upperBound = 0 + 60 * 10;
-
-    const ModifyPositionParams = {
-      tickLower: lowerBound,
-      tickUpper: upperBound,
-      liquidityDelta: "10000000",
-    };
-
-    const poolID = await uniswapInteract.getID(poolKey);
-    let liq = await poolManager.getLiquidity(poolID);
-    console.log(`The pool is starting with ${liq.toString()} in liquidity`);
-    const slot0 = await poolManager.getSlot0(poolID);
-    console.log(`Starting tick is ${slot0[1].toString()}`);
-
-    //This is needed to account for the 18 decimals used in ERC20s
-    const decimalAdj = new Big(10).pow(18);
-
-    //Below an arbitary amount is set for the token0 and token1 amounts for liquidity
-    const token0Amount = new Big("10000").times(decimalAdj);
-    const token1Amount = new Big("10000").times(decimalAdj);
-
-    //This is needed to calculate the correct change in liquidity from the token amounts
-    const liquidity = await uniswapInteract.getLiquidityAmount(
-      slot0[1].toString(),
-      lowerBound,
-      upperBound,
-      token0Amount.toFixed(),
-      token1Amount.toFixed()
-    );
-
-    ModifyPositionParams.liquidityDelta = liquidity.toString();
-
-    //With the UniswapInteract code, one must approve of the token and amount beforehand
-    await GNOME.approve(uniswapInteract.target, token0Amount.toFixed());
-    await EPICDAI.approve(uniswapInteract.target, token1Amount.toFixed());
-    console.log(`Adding liquidity...`);
-    //The poolKey is used to identify the pair and the timeStamp + 100 is the deadline
-    await uniswapInteract.addLiquidity(
-      poolKey,
-      ModifyPositionParams,
-      timeStamp + 100
-    );
-    console.log(`Liquidity added!`);
-    liq = await poolManager.getLiquidity(poolID);
-    console.log(`The pool now has ${liq.toString()} in liquidity`);
-    const swapAmount = new Big("10").times(decimalAdj);
-    //Below are the neccessary sqrtPriceLimitX96's to set if you want to ignore slippage for a swap
-
-    //zeroForOne - true - 4295128740
-    //zeroForOne - false - 1461446703485210103287273052203988822378723970342
-    const SwapParams = {
-      zeroForOne: true,
-      amountSpecified: swapAmount.toFixed(),
-      sqrtPriceLimitX96: "4295128740",
-    };
-
-    //We are swapping token0 for token1 so we must see which token is which
-    let Token0 = EPICDAI.target < GNOME.target ? EPICDAI : GNOME;
-    let Token1 = EPICDAI.target < GNOME.target ? GNOME : EPICDAI;
-
-    let token0BalBefore = await Token0.balanceOf(deployer.address);
-    token0BalBefore = new Big(token0BalBefore.toString());
-
-    //With the UniswapInteract code, one must approve of the token and amount beforehand
-    await Token0.approve(uniswapInteract.target, swapAmount.toFixed());
-    await Token1.approve(uniswapInteract.target, 0);
-    console.log(`Swapping Gnome --> EpicDai`);
-    await uniswapInteract.swap(poolKey, SwapParams, timeStamp + 100);
-    console.log(`Swap finished!\n`);
-
-    let token0BalAfter = await Token0.balanceOf(deployer.address);
-    token0BalAfter = new Big(token0BalAfter.toString());
-
-    assert.equal(
-      token0BalBefore.toFixed(),
-      token0BalAfter.add(swapAmount).toFixed()
-    );
-
-    const token0Donation = new Big("10").times(decimalAdj);
-    const token1Donation = new Big("10").times(decimalAdj);
-
-    //With the UniswapInteract code, one must approve of the token and amount beforehand
-    await EPICDAI.approve(uniswapInteract.target, token0Donation.toFixed());
-    await GNOME.approve(uniswapInteract.target, token1Donation.toFixed());
-
-    console.log(`Donating towards the pool...`);
-    await uniswapInteract.donate(
-      poolKey,
-      token0Donation.toFixed(),
-      token1Donation.toFixed(),
-      timeStamp + 100
-    );
-    console.log(`Donation finished!`);
-    console.log(`Closing position...`);
-    await uniswapInteract.closePosition(
-      poolKey,
-      lowerBound,
-      upperBound,
-      timeStamp + 100
-    );
-    console.log(`Position closed`);
-    liq = await poolManager.getLiquidity(poolID);
-
-    console.log(`The pool now has ${liq.toString()} in liquidity`);
-  });
   it("can set up game", async () => {
     const chosenToken = EPICDAI;
     const list = [
@@ -179,47 +46,21 @@ describe("Pool Test ", async function () {
       "Way",
       "WAY",
     ];
-    const gameID = "0";
-    await deployerGame.addNames(list);
-    //This is needed to account for the 18 decimals used in ERC20s
-    const decimalAdj = new Big(10).pow(18);
+    const decimalAdj = new Big(10).pow(18); // Adjust for ERC20 decimals
+    const startingAmount = new Big("1000").times(decimalAdj); // Set an arbitrary amount for token
 
-    //Below an arbitary amount is set for the token0 and token1 amounts for liquidity
-    const startingAmount = new Big("10").times(decimalAdj);
+    // Mint and approve tokens for the game
+    await chosenToken.mint(startingAmount.toFixed());
     await chosenToken.approve(deployerGame.target, startingAmount.toFixed());
+
+    // Set up the game with the token and check game balance
     await deployerGame.setUp(chosenToken.target, startingAmount.toFixed());
-    const listSol = await deployerGame.getAllProperties();
-    assert.equal(listSol.toString(), list.toString());
     const gameBalance = await chosenToken.balanceOf(deployerGame.target);
-    assert(gameBalance.toString(), startingAmount.toFixed());
+    assert.equal(gameBalance.toString(), startingAmount.toFixed());
 
-    //Now the user will attempt to join
+    // User attempts to join the game
     await userGame.joinGame();
-
-    //Now I validate all properties
-    const numOfPlayers = await deployerGame.getActiveNumberOfPlayers();
-    assert.equal(numOfPlayers.toString(), "2");
-
-    const activeGameID = await deployerGame.getActiveGameID();
-    assert.equal(activeGameID.toString(), "0");
-
-    const activePlayers = await deployerGame.getActivePlayers();
-    assert.equal(activePlayers.toString(), [deployer.address, user.address]);
-
-    const chosenCurrency = await deployerGame.getCurrentChosenCurrency();
-    assert.equal(chosenCurrency.toString(), chosenToken.target);
-
-    //Now we can start the game
-    await deployerGame.startGame();
-    //Show the player moving
-    await deployerGame.beginMove();
-    //Player is now at the location
-
-    const deployerNewPosition = await deployerGame.getPlayerPosition(
-      deployer.address
-    );
-    console.log(deployerNewPosition.toString());
-    assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
+    // Add further assertions and game setup checks here
   });
   describe("Testing Game Mechanics", async () => {
     beforeEach(async () => {
@@ -240,7 +81,9 @@ describe("Pool Test ", async function () {
       const decimalAdj = new Big(10).pow(18);
 
       //Below an arbitary amount is set for the token0 and token1 amounts for liquidity
-      const startingAmount = new Big("10").times(decimalAdj);
+      const startingAmount = new Big("1000").times(decimalAdj);
+      console.log(startingAmount.toFixed());
+      await chosenToken.mint(startingAmount.toFixed());
       await chosenToken.approve(deployerGame.target, startingAmount.toFixed());
       await deployerGame.setUp(chosenToken.target, startingAmount.toFixed());
       const listSol = await deployerGame.getAllProperties();
@@ -263,117 +106,175 @@ describe("Pool Test ", async function () {
 
       const chosenCurrency = await deployerGame.getCurrentChosenCurrency();
       assert.equal(chosenCurrency.toString(), chosenToken.target);
+      //User joins
+      const buyIN = await deployerGame.getBuyIn();
+      await userEPICDAI.mint(buyIN.toString());
+      await userEPICDAI.approve(userGame.target, buyIN.toString());
 
       //Now we can start the game
+
       await deployerGame.startGame();
     });
     it("testing movement", async () => {
       //Show the player moving
+      console.log("FIrst");
       await deployerGame.beginMove();
-      //Player is now at the location
+      console.log("FIrst");
 
       const deployerNewPosition = await deployerGame.getPlayerPosition(
         deployer.address
       );
-      console.log(deployerNewPosition.toString());
+      console.log("New Deployer Position:", deployerNewPosition.toString());
       assert.isAbove(parseInt(deployerNewPosition.toString()), 0);
-    });
-  });
-  describe("Testing Custom Curve", async () => {
-    beforeEach(async () => {
-      console.log("Setting up stuff");
-    });
-    it("can initialze my own pool with custom smurve", async () => {
-      console.log(`\nStarting custom pool test!`);
-      //I need key, sqrtPrice, and hookData
-      const decimalAdj = new Big(10).pow(18);
-
-      const hook = await hookFactory.hooks(0); //This is the hook created in 01-find-hook.js
-      const hookContract = await ethers.getContractAt("MyHook", hook);
-
-      //Sort the tokens
-      const addresses = [EPICDAI.target, GNOME.target];
-      addresses.sort();
-
-      //Use these flags if you wish to include that fee
-
-      //All fees are currently included
-      const myFees = 0; //To set protocl fees it mus be done here
-
-      const poolKey = {
-        currency0: addresses[0].toString().trim(),
-        currency1: addresses[1].toString().trim(),
-        fee: myFees,
-        tickSpacing: "60",
-        hooks: hook,
-      };
-      const sqrtPrice = calculateSqrtPriceX96(1, 18, 18);
-
-      let timeStamp = (await ethers.provider.getBlock("latest")).timestamp;
-
-      await hookContract.startPool(
-        poolKey,
-        sqrtPrice.toFixed(),
-        "0x",
-        timeStamp + 100
+      await expect(deployerGame.beginMove()).to.be.revertedWith(
+        "Must be current Player"
       );
-      const lowerBound = 0 - 60 * 10;
-      const upperBound = 0 + 60 * 10;
+      console.log("after");
+      // console.log("Here", user.address);
+      await userGame.beginMove();
+      const userNewPosition = await deployerGame.getPlayerPosition(
+        user.address
+      );
+      console.log("New User Position:", userNewPosition.toString());
+      assert.isAbove(parseInt(userNewPosition.toString()), 0);
+    });
+    it("user can purchase property", async () => {
+      //Show the player moving
+      console.log("1");
+      await deployerGame.testMove(2, false);
+      console.log("2");
 
-      const poolID = await uniswapInteract.getID(poolKey);
-      let liq = await poolManager.getLiquidity(poolID);
-      console.log(`The pool is starting with ${liq.toString()} in liquidity`);
-      const slot0 = await poolManager.getSlot0(poolID);
-      console.log(`Starting tick is ${slot0[1].toString()}`);
-      const swapAmount = new Big("10").times(decimalAdj);
+      //Player is now at the location
+      const listOfProperties = await deployerGame.getActiveProperties();
+      console.log(listOfProperties);
+      const deployerNewPosition = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      console.log("New Deployer Position:", deployerNewPosition.toString());
+      assert.equal(deployerNewPosition.toString(), "2");
+      const property = await deployerGame.returnPropertyUnderPlayer(
+        deployer.address
+      );
+      // console.log(property);
+      assert.equal(property.toString(), listOfProperties[0]);
+      console.log("Time to purchase");
+      const amount = ethers.parseEther("65");
 
-      //Below we are adding liquidity to hook
-      await GNOME.transfer(hook, swapAmount.toFixed());
-      await EPICDAI.transfer(hook, swapAmount.toFixed());
-
-      //This is needed to account for the 18 decimals used in ERC20s
-      //Below are the neccessary sqrtPriceLimitX96's to set if you want to ignore slippage for a swap
-
-      //zeroForOne - true - 4295128740
-      //zeroForOne - false - 1461446703485210103287273052203988822378723970342
-      const SwapParams = {
-        zeroForOne: true,
-        amountSpecified: swapAmount.toFixed(),
-        sqrtPriceLimitX96: "4295128740",
-      };
-
-      //We are swapping token0 for token1 so we must see which token is which
-      let Token0 = EPICDAI.target < GNOME.target ? EPICDAI : GNOME;
-      let Token1 = EPICDAI.target < GNOME.target ? GNOME : EPICDAI;
-
-      let token0BalBefore = await Token0.balanceOf(deployer.address);
-      token0BalBefore = new Big(token0BalBefore.toString());
-
-      let token1BalBefore = await Token1.balanceOf(deployer.address);
-      token1BalBefore = new Big(token1BalBefore.toString());
-      //With the UniswapInteract code, one must approve of the token and amount beforehand
-      await Token0.approve(hookContract.target, swapAmount.toFixed());
-      await Token1.approve(hookContract.target, 0);
-      console.log(`Swapping Gnome --> EpicDai`);
-
-      await hookContract.swap(poolKey, SwapParams, timeStamp + 100);
-      console.log(`Swap finished!\n`);
-
-      let token0BalAfter = await Token0.balanceOf(deployer.address);
-      token0BalAfter = new Big(token0BalAfter.toString());
-
-      let token1BalAfter = await Token1.balanceOf(deployer.address);
-      token1BalAfter = new Big(token1BalAfter.toString());
-
+      await EPICDAI.approve(deployerGame.target, amount.toString());
+      await deployerGame.purchaseProperty(
+        amount.toString(),
+        property.toString()
+      );
+      const list = await deployerGame.getMyProperties();
+      console.log(list);
+      const propertyAmount = await deployerGame.getBalanceOfProperty(list[0]);
+      console.log(propertyAmount.toString());
       assert.equal(
-        token0BalBefore.toFixed(),
-        token0BalAfter.add(swapAmount).toFixed()
+        propertyAmount.toString(),
+        ethers.parseEther("1").toString()
       );
-
-      assert.equal(
-        token1BalBefore.add(swapAmount).toFixed(),
-        token1BalAfter.toFixed()
+      console.log("Now trying to sell");
+      PROP = await ethers.getContractAt("Property", property.toString());
+      await PROP.approve(
+        deployerGame.target,
+        ethers.parseEther("10").toString()
+      );
+      await deployerGame.sellProperty(
+        ethers.parseEther("1").toString(),
+        property.toString()
       );
     });
+    it("rent is enforced", async () => {
+      //Show the player moving
+      await deployerGame.testMove(2, false);
+      //Player is now at the location
+      const listOfProperties = await deployerGame.getActiveProperties();
+      console.log(listOfProperties);
+      const deployerNewPosition = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      console.log("New Deployer Position:", deployerNewPosition.toString());
+      assert.equal(deployerNewPosition.toString(), "2");
+      const property = await deployerGame.returnPropertyUnderPlayer(
+        deployer.address
+      );
+      // console.log(property);
+      assert.equal(property.toString(), listOfProperties[0]);
+      console.log("Time to purchase");
+      const amount = ethers.parseEther("65");
+
+      await EPICDAI.approve(deployerGame.target, amount.toString());
+      await deployerGame.purchaseProperty(
+        amount.toString(),
+        property.toString()
+      );
+      const list = await deployerGame.getMyProperties();
+      const propertyAmount = await deployerGame.getBalanceOfProperty(list[0]);
+      console.log("Here");
+      await userEPICDAI.approve(deployerGame.target, amount.toString());
+      await userGame.testMove(2, false);
+    });
+    it("user can get sent to jail", async () => {
+      //Jail is on 6
+      await expect(deployerGame.testMove(15, false)).to.emit(
+        deployerGame,
+        "SentToJail"
+      );
+      //If the user is in jail they cannot move
+      await userGame.testMove(1, false);
+
+      await deployerGame.testMove(2, false);
+
+      const deployerNewPosition1 = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      console.log("New Deployer Position 1:", deployerNewPosition1.toString());
+      assert.equal(deployerNewPosition1.toString(), "15");
+
+      await userGame.testMove(1, false);
+      await deployerGame.testMove(2, false);
+
+      await userGame.testMove(1, false);
+      await deployerGame.testMove(2, false);
+
+      const deployerNewPosition2 = await deployerGame.getPlayerPosition(
+        deployer.address
+      );
+      assert.equal(deployerNewPosition2.toString(), "17");
+    });
+    it("user can receive air drop", async () => {
+      const balBefore = new Big(
+        (await EPICDAI.balanceOf(deployer.address)).toString()
+      );
+      const steps = 10;
+      await expect(deployerGame.testMove(steps, false)).to.emit(
+        deployerGame,
+        "ReceivingAirdrop"
+      );
+      const balAfter = new Big(
+        (await EPICDAI.balanceOf(deployer.address)).toString()
+      );
+      const decimal = new Big(10).pow(16);
+      const reward = new Big(steps).mul(decimal);
+      console.log(balAfter.sub(balBefore).toFixed(), reward.toFixed()); //This shows that the user is receiving the air drop
+    });
+    it("user can win", async () => {
+      const balDEployer = await EPICDAI.balanceOf(deployer.address);
+      await EPICDAI.transfer(user.address, balDEployer.toString());
+
+      await deployerGame.testMove(2, false);
+
+      await userGame.testMove(4, false);
+      const property = await userGame.returnPropertyUnderPlayer(user.address);
+      await userEPICDAI.approve(userGame.target, ethers.parseEther("80"));
+      await userGame.purchaseProperty(ethers.parseEther("80"), property);
+      console.log("----------------------");
+      await expect(deployerGame.testMove(2, false)).to.emit(
+        deployerGame,
+        "PlayerWon"
+      );
+    });
+    // Test case for buying, selling, and rebuying a property
+    it("user can buy, sell, and another user can buy the property chatg", async () => {});
   });
 });

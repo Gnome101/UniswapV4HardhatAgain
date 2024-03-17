@@ -38,6 +38,9 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     log: true,
     blockConfirmations: 2,
   });
+
+  const hookContract = await ethers.getContractAt("MyHook", hook);
+  await hookContract.setGame(Game.address);
   //   if (chainId != 31337) {
   //     log("Verifying...");
   //     await verify(Game.address, args, "contracts/TokenTown/Game.sol:Game");
