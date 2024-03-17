@@ -15,6 +15,8 @@ import {MyHook} from "../MyHook.sol";
 import {IHooks} from "../Uniswap/V4-Core/interfaces/IHooks.sol";
 import {TickMath} from "../Uniswap/V4-Core/libraries/TickMath.sol";
 
+import {IInterchainSecurityModule} from "../Hyperlane/NullISM.sol";
+
 contract Game is IGame /*, VRFConsumerBaseV2*/ {
     //Below is for chainlink
     bytes32 internal keyHash;
@@ -40,6 +42,8 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
 
     mapping(address => TokenInfo) getCurrencyInfo;
 
+    address public ism;
+
     struct TokenInfo {
         uint8[4] priceStarts;
         uint8[4] priceChanges;
@@ -60,6 +64,10 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
         // You can use console.log for debugging purposes
         // console.log("Game contract deployed by:", activeUser);
         // console.log("Pool Manager set to:", poolManager);
+    }
+
+    function setISM(address im) external {
+        ism = im;
     }
 
     //Function for testing
@@ -820,7 +828,24 @@ contract Game is IGame /*, VRFConsumerBaseV2*/ {
             );
     }
 
+    uint256 public messageCount;
+
     //Hyperlane functions
+    function handle(
+        uint32 _origin,
+        bytes32 _sender,
+        bytes calldata _message
+    ) external payable {
+        messageCount++;
+    }
+
+    function interchainSecurityModule()
+        external
+        view
+        returns (IInterchainSecurityModule)
+    {
+        return IInterchainSecurityModule(ism);
+    }
 }
 
 //Idea for how game is going to work
